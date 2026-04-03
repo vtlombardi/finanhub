@@ -79,6 +79,8 @@ model Tenant {
   auditLogs     AuditLog[]
   chatThreads   ChatThread[]
   aiJobs        AiJob[]
+  metrics       Metric[]
+  dailyMetrics  DailyMetric[]
 
   @@index([slug])
 }
@@ -204,6 +206,7 @@ model Listing {
   chatThreads ChatThread[]
   aiInsights  AiInsight[]
   moderationActions ModerationAction[]
+  metrics     Metric[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -482,4 +485,39 @@ model AiInsight {
 
   createdAt DateTime @default(now())
 }
+
+// =========================================================================
+// FASE 7: ANALYTICS E MÉTRICAS
+// =========================================================================
+
+model Metric {
+  id        String   @id @default(uuid())
+  tenantId  String
+  listingId String?
+  type      String   // VIEW, LEAD_CLICK, PROPOSAL_SENT, FAVORITE
+  value     Float    @default(1.0)
+  metadata  Json?
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, type, createdAt])
+}
+
+model DailyMetric {
+  id        String   @id @default(uuid())
+  tenantId  String
+  date      DateTime @db.Date
+  type      String   // Ex: DAILY_VIEWS, DAILY_LEADS
+  value     Int      @default(0)
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, date, type])
+}
+
 

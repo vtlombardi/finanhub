@@ -11,8 +11,12 @@ import { ChatModule } from './chat/chat.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { PlansModule } from './plans/plans.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { TenantMiddleware } from '../common/middleware/tenant.middleware';
 import { PrismaModule } from '../common/prisma/prisma.module';
+
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AuditLogInterceptor } from '../common/interceptors/audit-log.interceptor';
 
 @Module({
   imports: [
@@ -29,9 +33,15 @@ import { PrismaModule } from '../common/prisma/prisma.module';
     NotificationsModule,
     ModerationModule,
     PlansModule,
+    AnalyticsModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLogInterceptor,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

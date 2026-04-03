@@ -57,6 +57,7 @@ services:
     command: npm run start:dev
     environment:
       - NODE_ENV=development
+      - PORT=3001
       - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-finanhub}?schema=public
       - REDIS_URL=redis://redis:6379
     volumes:

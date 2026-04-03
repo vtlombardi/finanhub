@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { Queue } from 'bullmq';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class ListingsService {
   private aiQueue: Queue;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private analytics: AnalyticsService
+  ) {
     // Configura a fila M&A Review com o Redis local ou via Env
     this.aiQueue = new Queue('ai-review', {
       connection: {
@@ -220,6 +224,12 @@ export class ListingsService {
     if (!listing) {
       throw new NotFoundException('Listing indisponível ou inexistente');
     }
+
+    // Registro de Analytics Assíncrono (Fire and Forget)
+    this.analytics.trackEvent(listing.tenantId, 'VIEW', listing.id).catch(err => {
+       console.error('Failed to track view:', err);
+    });
+
     return listing;
   }
 
