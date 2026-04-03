@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { ProposalStatus } from '@prisma/client';
+// REMOVE COMPLETAMENTE essa importação
 
 @Injectable()
 export class LeadsService {
@@ -110,7 +110,7 @@ export class LeadsService {
   async updateProposalStatus(
     proposalId: string,
     tenantId: string,
-    status: ProposalStatus | string,
+    status: string,
   ) {
     const proposal = await this.prisma.proposal.findUnique({
       where: { id: proposalId },
