@@ -1,0 +1,523 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================================
+// ENUMS GLOBAIS
+// =========================================================================
+
+enum Role {
+  USER
+  ADMIN
+  OWNER
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_AI_REVIEW
+  ACTIVE
+  INACTIVE
+  FLAGGED
+  SUSPENDED
+  CLOSED
+}
+
+enum ProposalStatus {
+  OPEN
+  ACCEPTED
+  REJECTED
+  COUNTER_OFFER
+  WITHDRAWN
+}
+
+enum PlanTier {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum AiJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum IntentLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// =========================================================================
+// FASE 1: NÚCLEO MULTI-TENANT E IDENTIDADE
+// =========================================================================
+
+model Tenant {
+  id       String  @id @default(uuid())
+  slug     String  @unique
+  name     String
+  document String? @unique // CNPJ ou similar raiz da operadora
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações Diretas (O ambiente propaga a todos)
+  users         User[]
+  companies     Company[]
+  categories    Category[]
+  categoryAttrs CategoryAttribute[]
+  listings      Listing[]
+  plans         Plan[]
+  subscriptions Subscription[]
+  auditLogs     AuditLog[]
+  chatThreads   ChatThread[]
+  aiJobs        AiJob[]
+  metrics       Metric[]
+  dailyMetrics  DailyMetric[]
+
+  @@index([slug])
+}
+
+model User {
+  id           String @id @default(uuid())
+  tenantId     String
+  email        String
+  passwordHash String
+  fullName     String
+  role         Role   @default(USER)
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  companyMembers CompanyMember[]
+  leads          Lead[]
+  proposals      Proposal[]
+  favorites      Favorite[]
+  chatMessages   ChatMessage[]
+  chatParticipants ChatParticipant[]
+  notifications  Notification[]
+  moderationActions ModerationAction[] @relation("moderationActions")
+  auditLogs      AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, email])
+}
+
+model Company {
+  id         String  @id @default(uuid())
+  tenantId   String
+  slug       String
+  name       String
+  tradeName  String?
+  document   String? // CNPJ da empresa cliente
+  isVerified Boolean @default(false)
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members  CompanyMember[]
+  listings Listing[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, slug])
+}
+
+model CompanyMember {
+  id        String @id @default(uuid())
+  companyId String
+  userId    String
+  role      String @default("MEMBER") // Ex: "OWNER", "MANAGER", "MEMBER"
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, userId]) // Um usuário não entra duas vezes na mesma empresa
+}
+
+// =========================================================================
+// FASE 1: TAXONOMIA E MARKETPLACE (Listings)
+// =========================================================================
+
+model Category {
+  id          String  @id @default(uuid())
+  tenantId    String
+  slug        String
+  name        String
+  description String?
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attributes CategoryAttribute[]
+  listings   Listing[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, slug])
+}
+
+model CategoryAttribute {
+  id         String  @id @default(uuid())
+  tenantId   String
+  categoryId String
+  name       String
+  label      String
+  type       String // "STRING", "NUMBER", "BOOLEAN", "CURRENCY"
+  isRequired Boolean @default(false)
+
+  tenant   Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category Category                @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  values   ListingAttributeValue[]
+
+  @@unique([categoryId, name])
+}
+
+model Listing {
+  id         String @id @default(uuid())
+  tenantId   String
+  companyId  String
+  categoryId String
+
+  slug        String
+  title       String
+  description String
+  price       Decimal?      @db.Decimal(15, 2)
+  status      ListingStatus @default(DRAFT)
+  viewCount   Int           @default(0)
+  isFeatured     Boolean    @default(false)
+  featuredUntil  DateTime?
+  featuredPriority Int      @default(0) // 0 = normal, 10 = destaque, 20 = premium
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  media       ListingMedia[]
+  attrValues  ListingAttributeValue[]
+  leads       Lead[]
+  favorites   Favorite[]
+  chatThreads ChatThread[]
+  aiInsights  AiInsight[]
+  moderationActions ModerationAction[]
+  metrics     Metric[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, status, createdAt])
+}
+
+model ListingMedia {
+  id        String  @id @default(uuid())
+  listingId String
+  url       String
+  mediaType String // "IMAGE", "VIDEO", "DOCUMENT"
+  isCover   Boolean @default(false)
+
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model ListingAttributeValue {
+  id          String   @id @default(uuid())
+  listingId   String
+  attributeId String
+  valueStr    String?
+  valueNum    Decimal? @db.Decimal(15, 2)
+  valueBool   Boolean?
+
+  listing   Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  attribute CategoryAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, attributeId])
+}
+
+// =========================================================================
+// FASE 2: SOCIAL E NEGOCIAÇÃO
+// =========================================================================
+
+model Lead {
+  id          String       @id @default(uuid())
+  tenantId    String
+  listingId   String
+  investorId  String
+  message     String
+
+  // AI Qualification Fields (preenchidos pelo Worker assíncrono)
+  score             Int?          // 0-100 AI lead fit score
+  intentLevel       IntentLevel?  // LOW, MEDIUM, HIGH
+  aiClassification  String?       // Ex: "QUALIFIED", "UNQUALIFIED", "NEEDS_INFO"
+  aiReasonSummary   String?       // Justificativa da IA em 1-2 frases
+  aiRecommendedAction String?     // Ex: "Agendar call", "Solicitar docs", "Descartar"
+  aiProcessedAt     DateTime?     // Timestamp de quando a IA processou
+  aiError           String?       // Se houve falha, registra aqui
+
+  listing   Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  investor  User       @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  proposals Proposal[]
+
+  createdAt DateTime @default(now())
+
+  // Um investidor não devia ter milhares de leads soltos idênticos
+  @@index([tenantId, investorId])
+  @@index([listingId])
+}
+
+model Proposal {
+  id         String @id @default(uuid())
+  leadId     String
+  investorId String
+
+  valueOffered Decimal        @db.Decimal(15, 2)
+  conditions   String?
+  status       ProposalStatus @default(OPEN)
+
+  lead     Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  investor User @relation(fields: [investorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Favorite {
+  id        String @id @default(uuid())
+  listingId String
+  userId    String
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([listingId, userId])
+}
+
+model ChatThread {
+  id        String @id @default(uuid())
+  tenantId  String
+  listingId String
+  leadId    String?
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  listing  Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+  participants ChatParticipant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatParticipant {
+  id       String @id @default(uuid())
+  threadId String
+  userId   String
+
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime @default(now())
+
+  @@unique([threadId, userId])
+}
+
+model ChatMessage {
+  id       String  @id @default(uuid())
+  threadId String
+  senderId String
+  body     String  @db.Text
+  isRead   Boolean @default(false)
+
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// =========================================================================
+// NOTIFICAÇÕES IN-APP
+// =========================================================================
+
+model Notification {
+  id       String  @id @default(uuid())
+  userId   String
+  type     String  // NEW_LEAD, NEW_PROPOSAL, NEW_MESSAGE, LISTING_STATUS_CHANGE, MODERATION_ACTION
+  title    String
+  body     String
+  isRead   Boolean @default(false)
+  metadata Json?   // { listingId, leadId, threadId, etc }
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+// =========================================================================
+// MODERAÇÃO OPERACIONAL
+// =========================================================================
+
+model ModerationAction {
+  id          String @id @default(uuid())
+  listingId   String
+  moderatorId String
+  action      String // APPROVE, REJECT, FLAG, OVERRIDE_AI
+  reason      String?
+  previousStatus String?
+  newStatus   String?
+
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  moderator User    @relation("moderationActions", fields: [moderatorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([listingId])
+}
+
+// =========================================================================
+// FASE 3: MONETIZAÇÃO, AUDITORIA E INTELIGÊNCIA ARTIFICIAL
+// =========================================================================
+
+model Plan {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  tier        PlanTier
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(15, 2)
+  priceYearly Decimal? @db.Decimal(15, 2)
+  currency    String   @default("BRL")
+  isPublic    Boolean  @default(true)
+
+  // Limites de recursos
+  maxListings       Int @default(1)
+  maxLeadsPerMonth  Int @default(10)
+  maxFeaturedListings Int @default(0)
+
+  // Feature Flags
+  hasAiQualification Boolean @default(false)
+  hasChat            Boolean @default(false)
+  hasPrioritySupport Boolean @default(false)
+  hasAnalytics       Boolean @default(false)
+  hasApiAccess       Boolean @default(false)
+  hasCustomBranding  Boolean @default(false)
+
+  tenant        Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subscription {
+  id       String @id @default(uuid())
+  tenantId String
+  planId   String
+
+  startDate  DateTime  @default(now())
+  endDate    DateTime?
+  isActive   Boolean   @default(true)
+  canceledAt DateTime?
+  cancelReason String?
+
+  // Billing-ready fields
+  billingCycle  String @default("MONTHLY") // MONTHLY, YEARLY
+  externalId    String? // Stripe subscription ID ou similar
+  lastPaymentAt DateTime?
+  nextBillingAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String  @id @default(uuid())
+  tenantId   String
+  userId     String?
+  action     String // Ex: "USER_DELETED", "PLAN_UPGRADED"
+  entityType String
+  entityId   String
+  metadata   Json?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, entityType])
+}
+
+model AiJob {
+  id       String      @id @default(uuid())
+  tenantId String
+  traceId  String      @unique
+  jobName  String // Ex: QUALIFY_LEAD
+  status   AiJobStatus @default(PENDING)
+  payload  Json
+  result   Json?
+  error    String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+}
+
+model AiInsight {
+  id               String   @id @default(uuid())
+  listingId        String
+  scamProbability  Decimal? @db.Decimal(5, 4) // 0.0000 to 1.0000
+  recommendedTitle String?
+  flags            String[]
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// =========================================================================
+// FASE 7: ANALYTICS E MÉTRICAS
+// =========================================================================
+
+model Metric {
+  id        String   @id @default(uuid())
+  tenantId  String
+  listingId String?
+  type      String   // VIEW, LEAD_CLICK, PROPOSAL_SENT, FAVORITE
+  value     Float    @default(1.0)
+  metadata  Json?
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, type, createdAt])
+}
+
+model DailyMetric {
+  id        String   @id @default(uuid())
+  tenantId  String
+  date      DateTime @db.Date
+  type      String   // Ex: DAILY_VIEWS, DAILY_LEADS
+  value     Int      @default(0)
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, date, type])
+}
+
+
