@@ -127,7 +127,7 @@ export class LeadsService {
 
     return this.prisma.proposal.update({
       where: { id: proposalId },
-      data: { status: status as ProposalStatus },
+      data: { status },
       include: {
         lead: {
           include: {
