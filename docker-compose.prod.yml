@@ -1,0 +1,70 @@
+version: '3.8'
+
+# [Ambiente: PRODUÇÃO / STAGING]
+# Imagens imutáveis empacotadas via Github Actions. Exige builds isolados.
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: finanhub_nginx_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - finanhub_net_prod
+
+  db:
+    image: postgres:15-alpine
+    container_name: finanhub_db_prod
+    restart: always
+    env_file: .env.prod
+    volumes:
+      - finanhub_pgdata_prod:/var/lib/postgresql/data
+    networks:
+      - finanhub_net_prod
+
+  redis:
+    image: redis:7-alpine
+    container_name: finanhub_redis_prod
+    restart: always
+    networks:
+      - finanhub_net_prod
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: finanhub_backend_prod
+    restart: always
+    env_file: .env.prod
+    command: npm run start:prod
+    depends_on:
+      - db
+      - redis
+    networks:
+      - finanhub_net_prod
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: finanhub_frontend_prod
+    restart: always
+    env_file: .env.prod
+    command: npm run start
+    networks:
+      - finanhub_net_prod
+
+volumes:
+  finanhub_pgdata_prod:
+
+networks:
+  finanhub_net_prod:
+    driver: bridge

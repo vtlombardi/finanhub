@@ -1,0 +1,1 @@
+export default function AdsMarketplace() { return <h1>Vitrine de Oportunidades</h1>; }

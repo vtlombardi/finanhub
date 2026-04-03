@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'finanhub-backend'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['backend:3000']
+  
+  # Preparação para Monitorar PostgreSQL 
+  # - targets: ['pg-exporter:9187'] 

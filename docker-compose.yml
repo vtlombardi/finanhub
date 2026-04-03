@@ -1,0 +1,98 @@
+version: '3.8'
+
+# [Ambiente: DESENVOLVIMENTO - ROOT]
+# Voltado para Produtividade Local e Bind Volumes (Hot Reload On)
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: finanhub_nginx_dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - finanhub_net
+
+  db:
+    image: postgres:15-alpine
+    container_name: finanhub_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-finanhub}
+    expose:
+      - 5432
+    ports:
+      - "5432:5432" # Permitir IDEs locais no host interagirem com o db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d finanhub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - finanhub_pgdata_dev:/var/lib/postgresql/data
+    networks:
+      - finanhub_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: finanhub_redis_dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - finanhub_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development # Multi-stage dev loop
+    container_name: finanhub_backend_dev
+    command: npm run start:dev
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-finanhub}?schema=public
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./backend:/app # Mapeamento VSCode live Reload
+      - /app/node_modules # Impede overlay do host e força usar linux binaries localmente
+    ports:
+      - "3001:3001" # Alinhado com snippet 3001:3001
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - finanhub_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: finanhub_frontend_dev
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:80/api # Conecta via proxy e browser Client
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next 
+    # Portas omitidas pro host. O Acesso ao Next será via HTTP localhost 80.
+    depends_on:
+      - backend
+    networks:
+      - finanhub_net
+
+volumes:
+  finanhub_pgdata_dev:
+
+networks:
+  finanhub_net:
+    driver: bridge
