@@ -4,10 +4,10 @@
   "private": true,
   "description": "API Central do FINANHUB (NestJS)",
   "scripts": {
-    "build": "nest build",
-    "start": "nest start",
-    "start:dev": "nest start --watch"
-  },
+  "build": "nest build",
+  "start": "node dist/main.js",
+  "start:prod": "node dist/main.js"
+}
   "dependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
