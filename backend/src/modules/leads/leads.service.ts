@@ -4,7 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
-// REMOVE COMPLETAMENTE essa importação
+
+const ALLOWED_PROPOSAL_STATUS = ['PENDING', 'ACCEPTED', 'REJECTED'] as const;
+type AllowedProposalStatus = (typeof ALLOWED_PROPOSAL_STATUS)[number];
 
 @Injectable()
 export class LeadsService {
@@ -112,6 +114,12 @@ export class LeadsService {
     tenantId: string,
     status: string,
   ) {
+    const normalizedStatus = status.toUpperCase() as AllowedProposalStatus;
+
+    if (!ALLOWED_PROPOSAL_STATUS.includes(normalizedStatus)) {
+      throw new ForbiddenException('Status de proposta inválido');
+    }
+
     const proposal = await this.prisma.proposal.findUnique({
       where: { id: proposalId },
       include: { lead: true },
@@ -127,7 +135,7 @@ export class LeadsService {
 
     return this.prisma.proposal.update({
       where: { id: proposalId },
-      data: { status },
+      data: { status: normalizedStatus as any },
       include: {
         lead: {
           include: {
