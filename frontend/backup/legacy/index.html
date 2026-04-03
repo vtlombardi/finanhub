@@ -1,0 +1,2116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="FINANHUB — Onde negócios sérios se encontram. Conecte-se com investidores e empreendedores em um ambiente seguro e profissional.">
+  <title>Página Inicial | FINANHUB</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    /* ══════════════════════════════════════
+       RESET & TOKENS
+    ══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal:        #12b3af;
+      --teal-dark:   #0d8a87;
+      --teal-light:  #36bebb;
+      --teal-glow:   rgba(18,179,175,.35);
+      --teal-10:     rgba(18,179,175,.10);
+      --black:       #000;
+      --dark:        #0a0a0a;
+      --dark-2:      #111;
+      --dark-3:      #1a1a1a;
+      --neutral:     #3e455e;
+      --neutral-50:  rgba(62,69,94,.5);
+      --neutral-20:  rgba(62,69,94,.2);
+      --neutral-10:  rgba(62,69,94,.1);
+      --white-85:    rgba(255,255,255,.85);
+      --white-55:    rgba(255,255,255,.55);
+      --white-30:    rgba(255,255,255,.30);
+      --white-10:    rgba(255,255,255,.10);
+      --white-06:    rgba(255,255,255,.06);
+      --border:      #e5e7eb;
+      --bg-light:    #f9fafb;
+      --badge:       #ffc800;
+      --success:     #6cbf13;
+      --radius:      10px;
+      --radius-sm:   6px;
+      --shadow-sm:   0 2px 8px rgba(0,0,0,.08);
+      --shadow-md:   0 8px 24px rgba(0,0,0,.12);
+      --shadow-lg:   0 16px 48px rgba(0,0,0,.18);
+      --shadow-teal: 0 8px 32px rgba(18,179,175,.25);
+      --transition:  .25s cubic-bezier(.4,0,.2,1);
+      --font:        'Poppins', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--neutral);
+      background: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a { text-decoration: none; color: inherit; }
+    img { max-width: 100%; display: block; }
+    button { font-family: var(--font); }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── scroll-reveal ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity .65s ease, transform .65s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-left  { opacity: 0; transform: translateX(-32px); transition: opacity .65s ease, transform .65s ease; }
+    .reveal-right { opacity: 0; transform: translateX(32px);  transition: opacity .65s ease, transform .65s ease; }
+    .reveal-left.visible, .reveal-right.visible { opacity: 1; transform: translateX(0); }
+
+    /* stagger delays */
+    .d1 { transition-delay: .05s; }
+    .d2 { transition-delay: .12s; }
+    .d3 { transition-delay: .19s; }
+    .d4 { transition-delay: .26s; }
+    .d5 { transition-delay: .33s; }
+    .d6 { transition-delay: .40s; }
+
+    /* ══════════════════════════════════════
+       BUTTONS
+    ══════════════════════════════════════ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+      white-space: nowrap;
+      font-family: var(--font);
+    }
+    .btn-primary {
+      background: var(--teal);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(18,179,175,.3);
+    }
+    .btn-primary:hover {
+      background: var(--teal-dark);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-teal);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--white-30);
+      color: #fff;
+    }
+    .btn-outline:hover {
+      border-color: #fff;
+      background: var(--white-10);
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--neutral);
+    }
+    .btn-ghost:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+    .btn-lg { padding: 15px 36px; font-size: 16px; }
+
+    /* ══════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════ */
+    .header {
+      background: rgba(0,0,0,.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 1px solid var(--white-06);
+      transition: padding var(--transition), box-shadow var(--transition);
+    }
+    .header.scrolled {
+      box-shadow: 0 4px 24px rgba(0,0,0,.5);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+      gap: 24px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .logo img {
+      height: 34px;
+      width: auto;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .nav-link {
+      position: relative;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--white-55);
+      padding: 8px 13px;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%) scaleX(0);
+      width: calc(100% - 26px);
+      height: 1.5px;
+      background: var(--teal);
+      transition: transform var(--transition);
+      border-radius: 2px;
+    }
+    .nav-link:hover,
+    .nav-link.active {
+      color: #fff;
+      background: var(--white-06);
+    }
+    .nav-link.active::after { transform: translateX(-50%) scaleX(1); }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* ── Mobile controls ── */
+    .header-mobile {
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--white-55);
+      font-size: 17px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+    }
+    .icon-btn:hover { color: #fff; background: var(--white-10); }
+
+    /* ── Mobile nav drawer ── */
+    .mobile-nav {
+      position: fixed;
+      inset: 68px 0 0 0;
+      background: rgba(10,10,10,.97);
+      backdrop-filter: blur(16px);
+      z-index: 999;
+      transform: translateX(100%);
+      transition: transform .35s cubic-bezier(.4,0,.2,1);
+      overflow-y: auto;
+      padding: 24px 24px 48px;
+    }
+    .mobile-nav.open { transform: translateX(0); }
+    .mobile-nav-links {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 24px;
+    }
+    .mobile-nav-link {
+      display: block;
+      padding: 13px 16px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--white-55);
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+    }
+    .mobile-nav-link:hover { color: #fff; background: var(--white-06); }
+    .mobile-nav-link.accent { color: var(--teal); font-weight: 700; }
+    .mobile-nav-divider { height: 1px; background: var(--white-06); margin: 8px 0; }
+    .mobile-nav-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mobile-nav-actions .btn { width: 100%; justify-content: center; padding: 14px; font-size: 14px; }
+
+    /* ══════════════════════════════════════
+       HERO
+    ══════════════════════════════════════ */
+    .hero {
+      position: relative;
+      min-height: 580px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      background: var(--black);
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(135deg, rgba(0,0,0,.88) 0%, rgba(0,0,0,.6) 50%, rgba(0,0,0,.82) 100%),
+        url('https://i.postimg.cc/d3W5Rh0F/Home-2.png');
+      background-size: cover;
+      background-position: center;
+      transform: scale(1.04);
+      transition: transform 6s ease;
+    }
+    .hero:hover .hero-bg { transform: scale(1); }
+
+    .hero-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 700px;
+      padding: 80px 0;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--teal-10);
+      border: 1px solid rgba(18,179,175,.25);
+      color: var(--teal-light);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 40px;
+      margin-bottom: 24px;
+    }
+    .hero-badge span.dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--teal);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .5; transform: scale(1.4); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 900;
+      line-height: 1.08;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -.01em;
+      margin-bottom: 20px;
+    }
+    .hero h1 .accent { color: var(--teal); }
+
+    .hero p {
+      font-size: clamp(15px, 2vw, 18px);
+      color: var(--white-55);
+      font-weight: 300;
+      line-height: 1.7;
+      max-width: 540px;
+      margin-bottom: 36px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ══════════════════════════════════════
+       SEARCH BAR
+    ══════════════════════════════════════ */
+    .search-section {
+      background: var(--black);
+      padding: 28px 0 40px;
+    }
+
+    .search-box {
+      background: var(--dark-3);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+
+    .search-ai-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      color: var(--white-55);
+      font-weight: 500;
+    }
+    .toggle-track {
+      width: 36px;
+      height: 20px;
+      background: rgba(255,255,255,.15);
+      border-radius: 20px;
+      position: relative;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .toggle-track.on { background: var(--teal); }
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: left var(--transition);
+      box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+    .toggle-track.on .toggle-thumb { left: 19px; }
+    .ai-label { color: var(--teal-light); font-weight: 600; }
+
+    .search-form {
+      display: flex;
+      gap: 0;
+      background: #fff;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+    .search-field {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      border-right: 1px solid var(--border);
+      min-width: 0;
+    }
+    .search-field-icon {
+      padding: 0 14px;
+      color: var(--neutral-50);
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .search-field input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--neutral);
+      padding: 15px 16px 15px 0;
+      background: transparent;
+      min-width: 0;
+    }
+    .search-field input::placeholder { color: var(--neutral-50); }
+    .search-action { padding: 8px; flex-shrink: 0; }
+    .search-action .btn { padding: 10px 28px; }
+
+    @media (max-width: 600px) {
+      .search-form { flex-direction: column; border-radius: var(--radius-sm); }
+      .search-field { border-right: none; border-bottom: 1px solid var(--border); }
+      .search-action { padding: 8px; }
+      .search-action .btn { width: 100%; justify-content: center; }
+    }
+
+    /* ══════════════════════════════════════
+       STATS BANNER
+    ══════════════════════════════════════ */
+    .stats-section {
+      position: relative;
+      background: var(--black);
+      overflow: hidden;
+      padding: 60px 0;
+    }
+    #statsCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .stats-inner { position: relative; z-index: 2; }
+
+    .section-eyebrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 40px;
+    }
+    .section-eyebrow::before,
+    .section-eyebrow::after {
+      content: '';
+      flex: 1;
+      max-width: 120px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(18,179,175,.4));
+    }
+    .section-eyebrow::after { background: linear-gradient(to left, transparent, rgba(18,179,175,.4)); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 16px 24px;
+      border-right: 1px solid var(--white-06);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-item.visible { opacity: 1; transform: translateY(0); }
+
+    .stat-num {
+      font-size: clamp(2rem, 3vw, 3rem);
+      font-weight: 800;
+      color: var(--teal);
+      line-height: 1;
+      margin-bottom: 10px;
+      text-shadow: 0 0 24px rgba(18,179,175,.4);
+      letter-spacing: -.02em;
+    }
+    .stat-label {
+      font-size: 10.5px;
+      font-weight: 400;
+      color: var(--white-55);
+      line-height: 1.5;
+      max-width: 110px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
+      .stat-item { border-right: 1px solid var(--white-06); border-bottom: 1px solid var(--white-06); }
+      .stat-item:nth-child(3n) { border-right: none; }
+      .stat-item:nth-last-child(-n+3) { border-bottom: none; }
+    }
+    @media (max-width: 580px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .stat-item:nth-child(3n) { border-right: 1px solid var(--white-06); }
+      .stat-item:nth-child(2n) { border-right: none; }
+      .stat-item:nth-last-child(-n+2) { border-bottom: none; }
+    }
+
+    /* ══════════════════════════════════════
+       SECTION HEADINGS
+    ══════════════════════════════════════ */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .section-title {
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .02em;
+    }
+    .section-title.light { color: #fff; }
+    .section-title.dark  { color: var(--black); }
+    .section-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--teal);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: gap var(--transition);
+      white-space: nowrap;
+    }
+    .section-link:hover { gap: 8px; }
+
+    /* ══════════════════════════════════════
+       CATEGORIES
+    ══════════════════════════════════════ */
+    .categories-section {
+      background: #fff;
+      padding: 64px 0;
+    }
+
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+    }
+
+    .cat-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 12px;
+      padding: 24px 16px;
+      background: var(--bg-light);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--black);
+    }
+    .cat-card:hover {
+      border-color: var(--teal);
+      background: rgba(18,179,175,.04);
+      transform: translateY(-5px);
+      box-shadow: 0 12px 32px rgba(18,179,175,.15);
+    }
+    .cat-card:hover .cat-icon { background: var(--teal); }
+    .cat-card:hover .cat-icon img { filter: invert(1) brightness(2); }
+    .cat-card:hover .cat-name { color: var(--teal); }
+
+    .cat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--teal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background var(--transition), transform var(--transition);
+    }
+    .cat-card:hover .cat-icon { transform: scale(1.1); }
+    .cat-icon img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      filter: invert(1) brightness(2);
+    }
+    .cat-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1.35;
+      transition: color var(--transition);
+    }
+
+    /* ══════════════════════════════════════
+       FEATURED CARDS
+    ══════════════════════════════════════ */
+    .featured-section {
+      background: var(--dark);
+      padding: 64px 0;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .listing-card {
+      background: var(--dark-2);
+      border: 1px solid var(--white-06);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .listing-card:hover {
+      border-color: rgba(18,179,175,.3);
+      transform: translateY(-5px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.5);
+    }
+
+    .card-img {
+      position: relative;
+      height: 180px;
+      overflow: hidden;
+    }
+    .card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .5s ease;
+    }
+    .listing-card:hover .card-img img { transform: scale(1.07); }
+    .card-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,.5), transparent);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .listing-card:hover .card-img-overlay { opacity: 1; }
+
+    .card-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: var(--teal);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .card-body { padding: 18px; }
+    .card-cats {
+      font-size: 11px;
+      color: var(--white-30);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .card-cats a { color: var(--teal); transition: opacity var(--transition); }
+    .card-cats a:hover { opacity: .75; }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.35;
+      margin-bottom: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      transition: color var(--transition);
+    }
+    .listing-card:hover .card-title { color: var(--teal-light); }
+
+    .card-desc {
+      font-size: 12px;
+      color: var(--white-55);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-top: 1px solid var(--white-06);
+    }
+    .card-stars { display: flex; gap: 2px; color: #d1d5db; font-size: 11px; }
+    .card-arrow {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--white-06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white-30);
+      font-size: 11px;
+      transition: var(--transition);
+    }
+    .listing-card:hover .card-arrow {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    @media (max-width: 992px) { .cards-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .cards-grid { grid-template-columns: 1fr; } }
+
+    /* ══════════════════════════════════════
+       AD BANNER (leaderboard)
+    ══════════════════════════════════════ */
+    .ad-section {
+      background: var(--dark);
+      padding: 8px 0 40px;
+    }
+    .ad-banner-wrap {
+      background: linear-gradient(135deg, #0a2020 0%, #000 60%);
+      border: 1px solid rgba(18,179,175,.15);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 36px;
+      gap: 24px;
+      flex-wrap: wrap;
+      position: relative;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .ad-banner-wrap:hover {
+      border-color: rgba(18,179,175,.35);
+      box-shadow: 0 0 48px rgba(18,179,175,.1);
+    }
+    .ad-banner-wrap::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--teal);
+    }
+    .ad-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ad-brand-name {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--teal);
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    .ad-brand-tagline { font-size: 11px; color: var(--white-30); }
+    .ad-message { text-align: center; flex: 1; }
+    .ad-message h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .ad-message p  { font-size: 12px; color: var(--white-55); }
+    .ad-cta .btn { padding: 12px 28px; font-size: 13px; }
+
+    @media (max-width: 768px) {
+      .ad-banner-wrap { flex-direction: column; text-align: center; padding: 24px; }
+      .ad-banner-wrap::before { top: 0; left: 0; right: 0; bottom: auto; width: auto; height: 3px; }
+      .ad-cta .btn { width: 100%; justify-content: center; }
+    }
+
+    /* ══════════════════════════════════════
+       PARTNERS
+    ══════════════════════════════════════ */
+    .partners-section {
+      background: #fff;
+      padding: 60px 0;
+    }
+    .partners-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .partner-card {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .partner-card:hover {
+      border-color: var(--teal);
+      box-shadow: 0 8px 24px rgba(18,179,175,.15);
+      transform: translateY(-3px);
+    }
+    .partner-card img {
+      width: 100%;
+      height: 110px;
+      object-fit: contain;
+      padding: 20px;
+      transition: transform var(--transition);
+    }
+    .partner-card:hover img { transform: scale(1.04); }
+
+    @media (max-width: 768px) { .partners-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 400px) { .partners-grid { grid-template-columns: 1fr; } }
+
+    /* ══════════════════════════════════════
+       3 CTA BANNERS
+    ══════════════════════════════════════ */
+    .banners-section {
+      background: #fff;
+      padding: 0 0 60px;
+    }
+    .banners-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .mini-banner {
+      background: linear-gradient(135deg, #000 0%, #091a1a 100%);
+      border: 1px solid rgba(18,179,175,.15);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .mini-banner:hover {
+      border-color: rgba(18,179,175,.4);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 36px rgba(0,0,0,.4);
+    }
+    .mini-banner::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--teal);
+    }
+    .mini-banner-tag {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 10px;
+    }
+    .mini-banner h3 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .mini-banner h3 span { color: var(--teal); }
+    .mini-banner p {
+      font-size: 11px;
+      color: var(--white-30);
+      margin-bottom: 14px;
+    }
+    .mini-banner .link-cta {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--white-55);
+      transition: color var(--transition);
+    }
+    .mini-banner:hover .link-cta { color: var(--teal); }
+    .mini-banner-icon {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      font-size: 40px;
+      opacity: .15;
+      transition: opacity var(--transition), transform var(--transition);
+    }
+    .mini-banner:hover .mini-banner-icon { opacity: .3; transform: scale(1.1) rotate(-5deg); }
+
+    @media (max-width: 768px) { .banners-grid { grid-template-columns: 1fr; } }
+
+    /* ══════════════════════════════════════
+       ABOUT / METRICS
+    ══════════════════════════════════════ */
+    .about-section {
+      background: var(--dark);
+      padding: 80px 0;
+    }
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .about-logo {
+      margin-bottom: 28px;
+    }
+    .about-logo img { height: 36px; }
+    .about-text p {
+      font-size: 14px;
+      color: var(--white-55);
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+    .about-text p:last-child { margin-bottom: 0; }
+    .about-claim {
+      margin-top: 24px;
+      font-size: 15px !important;
+      font-weight: 700 !important;
+      color: #fff !important;
+      border-left: 3px solid var(--teal);
+      padding-left: 14px;
+    }
+
+    .about-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    .about-stat {
+      background: var(--dark-3);
+      border: 1px solid var(--white-06);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: var(--transition);
+    }
+    .about-stat:hover {
+      border-color: rgba(18,179,175,.3);
+      background: rgba(18,179,175,.04);
+    }
+    .about-stat-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--teal);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .about-stat-lbl {
+      font-size: 11px;
+      color: var(--white-55);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .about-grid { grid-template-columns: 1fr; gap: 40px; }
+    }
+    @media (max-width: 500px) {
+      .about-stats { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ══════════════════════════════════════
+       VIDEO GALLERY
+    ══════════════════════════════════════ */
+    .video-section {
+      background: #fff;
+      padding: 64px 0;
+    }
+    .video-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .video-card {
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      height: 190px;
+      background: var(--dark);
+      transition: var(--transition);
+    }
+    .video-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .video-card-bg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .5s ease;
+    }
+    .video-card:hover .video-card-bg { transform: scale(1.06); }
+    .video-card-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition);
+    }
+    .video-card:hover .video-card-overlay { background: rgba(0,0,0,.25); }
+    .video-play-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.15);
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(255,255,255,.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      transition: var(--transition);
+    }
+    .video-card:hover .video-play-btn {
+      background: var(--teal);
+      border-color: var(--teal);
+      transform: scale(1.1);
+    }
+
+    /* ══════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════ */
+    .footer {
+      background: #0a0a0a;
+      border-top: 1px solid var(--white-06);
+    }
+    .footer-body {
+      padding: 60px 0 40px;
+    }
+    .footer-layout {
+      display: grid;
+      grid-template-columns: 1.2fr repeat(2, 1fr);
+      gap: 48px;
+    }
+    .footer-brand {}
+    .footer-logo { margin-bottom: 16px; }
+    .footer-logo img { height: 32px; }
+    .footer-tagline {
+      font-size: 13px;
+      color: var(--white-30);
+      line-height: 1.7;
+      margin-bottom: 24px;
+      max-width: 260px;
+    }
+    .footer-social {
+      display: flex;
+      gap: 10px;
+    }
+    .social-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--white-06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white-55);
+      font-size: 13px;
+      transition: var(--transition);
+    }
+    .social-btn:hover { background: var(--teal); color: #fff; transform: translateY(-2px); }
+    .social-btn svg { width: 13px; height: 13px; fill: currentColor; }
+
+    .footer-col-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 18px;
+    }
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .footer-link {
+      font-size: 13px;
+      color: var(--white-30);
+      transition: color var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .footer-link:hover { color: var(--teal); }
+
+    .footer-bar {
+      border-top: 1px solid var(--white-06);
+      padding: 18px 0;
+    }
+    .footer-bar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .footer-copy { font-size: 12px; color: var(--white-30); }
+
+    @media (max-width: 900px) {
+      .footer-layout { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .footer-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ══════════════════════════════════════
+       MODAL
+    ══════════════════════════════════════ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,.4);
+      animation: modal-in .3s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes modal-in {
+      from { opacity: 0; transform: translateY(20px) scale(.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+    .modal-tab {
+      padding: 18px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--neutral-50);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: var(--transition);
+    }
+    .modal-tab.active { color: var(--neutral); border-bottom-color: var(--teal); }
+    .modal-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--neutral-50);
+      font-size: 18px;
+      padding: 8px;
+      border-radius: 50%;
+      transition: var(--transition);
+    }
+    .modal-close:hover { background: var(--neutral-10); color: var(--neutral); }
+    .modal-body { padding: 24px; }
+    .modal-pane { display: none; }
+    .modal-pane.active { display: block; }
+
+    .social-signin-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 20px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--neutral);
+      background: #fff;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: var(--font);
+      margin-bottom: 16px;
+    }
+    .social-signin-btn:hover { border-color: var(--teal); background: rgba(18,179,175,.03); }
+    .social-signin-btn img { width: 20px; height: 20px; }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--neutral-50);
+      margin: 16px 0;
+    }
+    .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .modal-form { display: flex; flex-direction: column; gap: 12px; }
+    .form-input {
+      width: 100%;
+      padding: 13px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--neutral);
+      outline: none;
+      transition: border-color var(--transition);
+      background: #fff;
+    }
+    .form-input:focus { border-color: var(--teal); }
+    .input-pass-wrap { position: relative; }
+    .input-pass-wrap .form-input { padding-right: 44px; }
+    .pass-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--neutral-50);
+      padding: 4px;
+      transition: color var(--transition);
+    }
+    .pass-toggle:hover { color: var(--neutral); }
+    .form-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .form-check { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--neutral-50); }
+    .form-link { color: var(--teal); font-weight: 600; transition: opacity var(--transition); }
+    .form-link:hover { opacity: .75; }
+    .form-submit {
+      width: 100%;
+      padding: 13px;
+      font-size: 15px;
+      margin-top: 4px;
+    }
+    .form-footer-note {
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--neutral-50);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* ══════════════════════════════════════
+       BACK TO TOP
+    ══════════════════════════════════════ */
+    .back-top {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      box-shadow: 0 4px 16px rgba(18,179,175,.4);
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity var(--transition), transform var(--transition), background var(--transition);
+      pointer-events: none;
+    }
+    .back-top.show { opacity: 1; transform: translateY(0); pointer-events: all; }
+    .back-top:hover { background: var(--teal-dark); }
+
+    /* ══════════════════════════════════════
+       UTILITY
+    ══════════════════════════════════════ */
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    .text-teal { color: var(--teal); }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════ HEADER ═══════════════════════════════════ -->
+<header class="header" id="header">
+  <div class="container">
+    <div class="header-inner">
+
+      <div class="header-left">
+        <a href="/" class="logo" aria-label="FINANHUB">
+          <img src="https://finanhub.com.br/media/cache/logo/custom/domain_1/content_files/img_logo.png?1770814367" alt="FINANHUB" onerror="this.style.display='none'">
+        </a>
+        <nav class="nav" aria-label="Principal">
+          <a href="https://finanhub.com.br/"                      class="nav-link active">Início</a>
+          <a href="https://finanhub.com.br/nossa-empresa.html"     class="nav-link">Nossa Empresa</a>
+          <a href="https://finanhub.com.br/oportunidades"          class="nav-link">Oportunidades</a>
+          <a href="https://finanhub.com.br/deal.html"              class="nav-link">Deal</a>
+          <a href="https://finanhub.com.br/anuncie"                class="nav-link">Planos</a>
+          <a href="https://finanhub.com.br/contato"                class="nav-link">Contato</a>
+        </nav>
+      </div>
+
+      <div class="header-right">
+        <a href="/anuncie" class="btn btn-outline">Anuncie aqui</a>
+        <button class="btn btn-primary" onclick="openModal()">Entrar</button>
+      </div>
+
+      <div class="header-mobile">
+        <button class="icon-btn" aria-label="Buscar"><i class="fa fa-search"></i></button>
+        <button class="icon-btn" aria-label="Menu" id="menuToggle" onclick="toggleMenu()" aria-expanded="false">
+          <i class="fa fa-bars" id="menuIcon"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Nav -->
+<div class="mobile-nav" id="mobileNav" aria-hidden="true">
+  <div class="mobile-nav-links">
+    <a href="https://finanhub.com.br/"                      class="mobile-nav-link">Início</a>
+    <a href="https://finanhub.com.br/nossa-empresa.html"     class="mobile-nav-link">Nossa Empresa</a>
+    <a href="https://finanhub.com.br/oportunidades"          class="mobile-nav-link">Oportunidades</a>
+    <a href="https://finanhub.com.br/deal.html"              class="mobile-nav-link">Deal</a>
+    <a href="https://finanhub.com.br/anuncie"                class="mobile-nav-link">Planos</a>
+    <a href="https://finanhub.com.br/contato"                class="mobile-nav-link">Contato</a>
+  </div>
+  <div class="mobile-nav-divider"></div>
+  <div class="mobile-nav-actions">
+    <a href="/anuncie" class="btn btn-outline">Anuncie aqui</a>
+    <button class="btn btn-primary" onclick="openModal()">Entrar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ HERO ═══════════════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+  <div class="container">
+    <div class="hero-content reveal">
+      <div class="hero-badge"><span class="dot"></span> Plataforma de Negócios #1 do Brasil</div>
+      <h1>ONDE OS <span class="accent">NEGÓCIOS</span> E AS <span class="accent">OPORTUNIDADES</span> SE ENCONTRAM</h1>
+      <p>Conecte-se com investidores e empreendedores em um ambiente seguro e profissional.</p>
+      <div class="hero-actions">
+        <a href="/oportunidades" class="btn btn-primary btn-lg">
+          <i class="fa fa-compass"></i> Explorar Oportunidades
+        </a>
+        <button class="btn btn-outline btn-lg" onclick="openModal()">
+          <i class="fa fa-user"></i> Criar Conta
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ SEARCH ═══════════════════════════════════ -->
+<section class="search-section">
+  <div class="container">
+    <div class="search-box reveal">
+      <div class="search-ai-toggle">
+        <div class="toggle-track" id="aiToggle" onclick="toggleAI(this)" role="switch" aria-checked="false" tabindex="0">
+          <div class="toggle-thumb"></div>
+        </div>
+        <span>Modo <span class="ai-label">IA</span> — busca semântica inteligente</span>
+      </div>
+      <form class="search-form" onsubmit="return false;">
+        <div class="search-field">
+          <div class="search-field-icon"><i class="fa fa-search"></i></div>
+          <input type="text" placeholder="Buscar por oportunidades, setores ou palavras-chave..." aria-label="Busca">
+        </div>
+        <div class="search-field">
+          <div class="search-field-icon"><i class="fa fa-map-marker"></i></div>
+          <input type="text" placeholder="Localização..." aria-label="Localização">
+        </div>
+        <div class="search-action">
+          <button class="btn btn-primary" type="submit">Buscar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ STATS ═══════════════════════════════════ -->
+<section class="stats-section" id="statsSection">
+  <canvas id="statsCanvas"></canvas>
+  <div class="container stats-inner">
+    <div class="section-eyebrow">FINANHUB em números</div>
+    <div class="stats-grid">
+      <div class="stat-item d1" data-target="100"  data-suffix="+">
+        <span class="stat-num">0</span>
+        <span class="stat-label">Consultores em todo o Brasil</span>
+      </div>
+      <div class="stat-item d2" data-target="200"  data-suffix="M">
+        <span class="stat-num">0</span>
+        <span class="stat-label">Em linhas de crédito</span>
+      </div>
+      <div class="stat-item d3" data-target="12"   data-suffix="M+">
+        <span class="stat-num">0</span>
+        <span class="stat-label">Acessos estimados</span>
+      </div>
+      <div class="stat-item d4" data-target="1000" data-format="k" data-suffix="">
+        <span class="stat-num">0</span>
+        <span class="stat-label">Empresas auxiliadas</span>
+      </div>
+      <div class="stat-item d5" data-target="98"   data-suffix="%">
+        <span class="stat-num">0</span>
+        <span class="stat-label">Clientes satisfeitos</span>
+      </div>
+      <div class="stat-item d6" data-target="500"  data-suffix="+">
+        <span class="stat-num">0</span>
+        <span class="stat-label">Empresas cadastradas</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ CATEGORIES ═══════════════════════════════════ -->
+<section class="categories-section">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title dark reveal">Nossas Categorias</h2>
+      <a href="https://finanhub.com.br/oportunidades/categorias" class="section-link reveal">
+        Ver todas <i class="fa fa-arrow-right"></i>
+      </a>
+    </div>
+    <div class="categories-grid">
+      <a href="/oportunidades/ativos-e-estruturas" class="cat-card reveal d1">
+        <div class="cat-icon">
+          <img src="https://finanhub.com.br/media/cache/resolve/small/custom/domain_1/image_files/sitemgr_photo_67.png" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22white%22 viewBox=%220 0 24 24%22%3E%3Crect x=%222%22 y=%222%22 width=%2220%22 height=%2220%22 rx=%222%22/%3E%3C/svg%3E'">
+        </div>
+        <span class="cat-name">Ativos e Estruturas</span>
+      </a>
+      <a href="/oportunidades/compra-e-venda-de-empresas" class="cat-card reveal d2">
+        <div class="cat-icon">
+          <img src="https://finanhub.com.br/media/cache/resolve/small/custom/domain_1/image_files/sitemgr_photo_68.png" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22white%22 viewBox=%220 0 24 24%22%3E%3Cpath d=%22M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z%22/%3E%3C/svg%3E'">
+        </div>
+        <span class="cat-name">Compra e Venda de Empresas</span>
+      </a>
+      <a href="/oportunidades/divulgacao-e-parcerias" class="cat-card reveal d3">
+        <div class="cat-icon">
+          <img src="https://finanhub.com.br/media/cache/resolve/small/custom/domain_1/image_files/sitemgr_photo_69.png" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22white%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%2210%22/%3E%3C/svg%3E'">
+        </div>
+        <span class="cat-name">Divulgação e Parcerias</span>
+      </a>
+      <a href="/oportunidades/franquias-e-licenciamento" class="cat-card reveal d4">
+        <div class="cat-icon">
+          <img src="https://finanhub.com.br/media/cache/resolve/small/custom/domain_1/image_files/sitemgr_photo_70.png" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22white%22 viewBox=%220 0 24 24%22%3E%3Crect x=%222%22 y=%223%22 width=%2220%22 height=%2214%22 rx=%222%22/%3E%3C/svg%3E'">
+        </div>
+        <span class="cat-name">Franquias e Licenciamento</span>
+      </a>
+      <a href="/oportunidades/imoveis-para-negocios" class="cat-card reveal d5">
+        <div class="cat-icon">
+          <img src="https://finanhub.com.br/media/cache/resolve/small/custom/domain_1/image_files/sitemgr_photo_71.png" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22white%22 viewBox=%220 0 24 24%22%3E%3Cpath d=%22M1 22V11L12 2l11 9v11%22/%3E%3C/svg%3E'">
+        </div>
+        <span class="cat-name">Imóveis para Negócios</span>
+      </a>
+      <a href="/oportunidades/investimentos" class="cat-card reveal d6">
+        <div class="cat-icon">
+          <img src="https://finanhub.com.br/media/cache/resolve/small/custom/domain_1/image_files/sitemgr_photo_72.png" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 viewBox=%220 0 24 24%22%3E%3Cline x1=%2212%22 y1=%221%22 x2=%2212%22 y2=%2223%22/%3E%3Cpath d=%22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6%22/%3E%3C/svg%3E'">
+        </div>
+        <span class="cat-name">Investimentos</span>
+      </a>
+      <a href="/oportunidades/oportunidades-premium" class="cat-card reveal d1">
+        <div class="cat-icon">
+          <img src="https://finanhub.com.br/media/cache/resolve/small/custom/domain_1/image_files/sitemgr_photo_73.png" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22white%22 viewBox=%220 0 24 24%22%3E%3Cpolygon points=%2212 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2%22/%3E%3C/svg%3E'">
+        </div>
+        <span class="cat-name">Oportunidades Premium</span>
+      </a>
+      <a href="/oportunidades/projetos-e-startups" class="cat-card reveal d2">
+        <div class="cat-icon">
+          <img src="https://finanhub.com.br/media/cache/resolve/small/custom/domain_1/image_files/sitemgr_photo_74.png" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 viewBox=%220 0 24 24%22%3E%3Cpath d=%22M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5%22/%3E%3C/svg%3E'">
+        </div>
+        <span class="cat-name">Projetos e Startups</span>
+      </a>
+      <a href="/oportunidades/servicos-e-consultoria" class="cat-card reveal d3">
+        <div class="cat-icon">
+          <img src="https://finanhub.com.br/media/cache/resolve/small/custom/domain_1/image_files/sitemgr_photo_75.png" alt="" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E'">
+        </div>
+        <span class="cat-name">Serviços e Consultoria</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ FEATURED ═══════════════════════════════════ -->
+<section class="featured-section">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title light reveal">Oportunidades em Destaque</h2>
+      <a href="/oportunidades" class="section-link reveal">Ver todas <i class="fa fa-arrow-right"></i></a>
+    </div>
+    <div class="cards-grid">
+
+      <article class="listing-card reveal d1">
+        <div class="card-img">
+          <img src="https://finanhub.com.br/media/cache/small/custom/domain_1/image_files/sitemgr_photo_10.jpg" alt="Anúncio Exemplo" loading="lazy" onerror="this.src='https://placehold.co/400x180/1a1a1a/12b3af?text=Oportunidade'">
+          <div class="card-img-overlay"></div>
+          <span class="card-badge">Destaque</span>
+        </div>
+        <div class="card-body">
+          <div class="card-cats">em <a href="/oportunidades/compra-e-venda-de-empresas">Compra e Venda</a> · <a href="/oportunidades/investimentos">Investimentos</a></div>
+          <a href="https://finanhub.com.br/oportunidades/anuncio-exemplo.html" class="card-title">Anúncio Exemplo — Oportunidade de Negócio</a>
+          <p class="card-desc">Oportunidade estruturada com potencial de alto retorno. Ambiente profissional, verificado e seguro para investidores sérios.</p>
+        </div>
+        <div class="card-footer">
+          <div class="card-stars">
+            <i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
+          </div>
+          <div class="card-arrow"><i class="fa fa-arrow-right"></i></div>
+        </div>
+      </article>
+
+      <article class="listing-card reveal d2">
+        <div class="card-img">
+          <img src="https://finanhub.com.br/media/cache/small/custom/domain_1/image_files/sitemgr_photo_28.jpg" alt="Anúncio Exemplo 4" loading="lazy" onerror="this.src='https://placehold.co/400x180/1a1a1a/12b3af?text=Oportunidade'">
+          <div class="card-img-overlay"></div>
+          <span class="card-badge">Premium</span>
+        </div>
+        <div class="card-body">
+          <div class="card-cats">em <a href="/oportunidades/franquias-e-licenciamento">Franquias</a></div>
+          <a href="https://finanhub.com.br/oportunidades/anuncio-exemplo-4.html" class="card-title">Anúncio Exemplo 4 — Franquia Nacional</a>
+          <p class="card-desc">Franquia consolidada com modelo de negócio validado. Suporte completo para novos franqueados em todo o território.</p>
+        </div>
+        <div class="card-footer">
+          <div class="card-stars">
+            <i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
+          </div>
+          <div class="card-arrow"><i class="fa fa-arrow-right"></i></div>
+        </div>
+      </article>
+
+      <article class="listing-card reveal d3">
+        <div class="card-img">
+          <img src="https://finanhub.com.br/media/cache/small/custom/domain_1/image_files/sitemgr_photo_16.jpg" alt="Anúncio Exemplo 2" loading="lazy" onerror="this.src='https://placehold.co/400x180/1a1a1a/12b3af?text=Oportunidade'">
+          <div class="card-img-overlay"></div>
+          <span class="card-badge">Novo</span>
+        </div>
+        <div class="card-body">
+          <div class="card-cats">em <a href="/oportunidades/projetos-e-startups">Startups</a></div>
+          <a href="https://finanhub.com.br/oportunidades/anuncio-exemplo-2.html" class="card-title">Anúncio Exemplo 2 — Startup em Expansão</a>
+          <p class="card-desc">Startup com tração comprovada buscando investimento seed para escalar operações em mercado de alto crescimento.</p>
+        </div>
+        <div class="card-footer">
+          <div class="card-stars">
+            <i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
+          </div>
+          <div class="card-arrow"><i class="fa fa-arrow-right"></i></div>
+        </div>
+      </article>
+
+      <article class="listing-card reveal d4">
+        <div class="card-img">
+          <img src="https://finanhub.com.br/media/cache/small/custom/domain_1/image_files/sitemgr_photo_22.jpg" alt="Anúncio Exemplo 3" loading="lazy" onerror="this.src='https://placehold.co/400x180/1a1a1a/12b3af?text=Oportunidade'">
+          <div class="card-img-overlay"></div>
+          <span class="card-badge">Verificado</span>
+        </div>
+        <div class="card-body">
+          <div class="card-cats">em <a href="/oportunidades/ativos-e-estruturas">Ativos</a> · <a href="/oportunidades/imoveis-para-negocios">Imóveis</a></div>
+          <a href="https://finanhub.com.br/oportunidades/anuncio-exemplo-3.html" class="card-title">Anúncio Exemplo 3 — Ativo Imobiliário</a>
+          <p class="card-desc">Portfólio imobiliário para negócios com localização estratégica e documentação completa para negociação imediata.</p>
+        </div>
+        <div class="card-footer">
+          <div class="card-stars">
+            <i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i><i class="fa fa-star-o"></i>
+          </div>
+          <div class="card-arrow"><i class="fa fa-arrow-right"></i></div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ AD BANNER ═══════════════════════════════════ -->
+<section class="ad-section">
+  <div class="container">
+    <a href="/anuncie" class="ad-banner-wrap reveal">
+      <div class="ad-brand">
+        <div class="ad-brand-name">FINANHUB</div>
+        <div class="ad-brand-tagline">Onde negócios sérios se encontram</div>
+      </div>
+      <div class="ad-message">
+        <h3>Sua empresa vista por milhares de investidores</h3>
+        <p>Anuncie no maior hub de oportunidades de negócios do Brasil</p>
+      </div>
+      <div class="ad-cta">
+        <span class="btn btn-primary">Anunciar agora <i class="fa fa-arrow-right"></i></span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ PARTNERS ═══════════════════════════════════ -->
+<section class="partners-section">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title dark reveal">Parceiros Verificados</h2>
+    </div>
+    <div class="partners-grid">
+      <a href="#" class="partner-card reveal d1">
+        <img src="https://finanhub.com.br/custom/domain_1/image_files/sitemgr_photo_76.jpeg" alt="Parceiro" loading="lazy" onerror="this.src='https://placehold.co/260x110/f9fafb/999?text=Parceiro'">
+      </a>
+      <a href="#" class="partner-card reveal d2">
+        <img src="https://finanhub.com.br/custom/domain_1/image_files/sitemgr_photo_77.png" alt="Parceiro" loading="lazy" onerror="this.src='https://placehold.co/260x110/f9fafb/999?text=Parceiro'">
+      </a>
+      <a href="#" class="partner-card reveal d3">
+        <img src="https://finanhub.com.br/custom/domain_1/image_files/sitemgr_photo_78.jpeg" alt="Parceiro" loading="lazy" onerror="this.src='https://placehold.co/260x110/f9fafb/999?text=Parceiro'">
+      </a>
+      <a href="#" class="partner-card reveal d4">
+        <img src="https://finanhub.com.br/custom/domain_1/image_files/sitemgr_photo_79.png" alt="Parceiro" loading="lazy" onerror="this.src='https://placehold.co/260x110/f9fafb/999?text=Parceiro'">
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ 3 BANNERS ═══════════════════════════════════ -->
+<section class="banners-section">
+  <div class="container">
+    <div class="banners-grid">
+      <a href="/anuncie" class="mini-banner reveal d1">
+        <div class="mini-banner-tag">Investidores</div>
+        <h3>Encontre seu <span>próximo deal</span></h3>
+        <p>Oportunidades curadas e verificadas</p>
+        <span class="link-cta">Anuncie aqui →</span>
+        <span class="mini-banner-icon"><i class="fa fa-line-chart"></i></span>
+      </a>
+      <a href="/anuncie" class="mini-banner reveal d2">
+        <div class="mini-banner-tag">Empreendedores</div>
+        <h3>Exponha sua <span>oportunidade</span></h3>
+        <p>Alcance investidores qualificados</p>
+        <span class="link-cta">Cadastre-se grátis →</span>
+        <span class="mini-banner-icon">🚀</span>
+      </a>
+      <a href="/anuncie" class="mini-banner reveal d3">
+        <div class="mini-banner-tag">Planos a partir de</div>
+        <h3><span>R$ 0</span></h3>
+        <p>Comece grátis. Cresça com a FINANHUB.</p>
+        <span class="link-cta">Ver planos →</span>
+        <span class="mini-banner-icon"><i class="fa fa-star"></i></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ ABOUT ═══════════════════════════════════ -->
+<section class="about-section">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-text reveal-left">
+        <div class="about-logo">
+          <img src="https://finanhub.com.br/media/cache/logo/custom/domain_1/content_files/img_logo.png?1770814367" alt="FINANHUB" onerror="this.style.display='none'">
+        </div>
+        <p>A FINANHUB nasce no ambiente digital após anos de atuação sólida no mercado offline, acumulando experiência prática, conexões estratégicas e resultados reais.</p>
+        <p>Antes de se tornar uma plataforma, a FINANHUB foi construída com base em negócios concretos, projetos estruturados e negociações acompanhadas de perto.</p>
+        <p>Agora, essa trajetória evolui para o online, levando credibilidade, método e visão estratégica para um ecossistema digital que conecta investidores, empresas e oportunidades de forma organizada e profissional.</p>
+        <p>Com tecnologia e alcance, a FINANHUB amplia o que sempre fez bem: transformar conexões em negócios reais.</p>
+        <p class="about-claim">FINANHUB. Onde negócios sérios se encontram.</p>
+      </div>
+      <div class="about-stats reveal-right">
+        <div class="about-stat d1 reveal">
+          <div class="about-stat-val">100+</div>
+          <div class="about-stat-lbl">Consultores em todo o Brasil</div>
+        </div>
+        <div class="about-stat d2 reveal">
+          <div class="about-stat-val">200M</div>
+          <div class="about-stat-lbl">Em linhas de crédito</div>
+        </div>
+        <div class="about-stat d3 reveal">
+          <div class="about-stat-val">12M+</div>
+          <div class="about-stat-lbl">Acessos estimados</div>
+        </div>
+        <div class="about-stat d4 reveal">
+          <div class="about-stat-val">98%</div>
+          <div class="about-stat-lbl">Clientes satisfeitos</div>
+        </div>
+        <div class="about-stat d5 reveal">
+          <div class="about-stat-val">1.000</div>
+          <div class="about-stat-lbl">Empresas auxiliadas</div>
+        </div>
+        <div class="about-stat d6 reveal">
+          <div class="about-stat-val">500+</div>
+          <div class="about-stat-lbl">Empresas cadastradas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ VIDEOS ═══════════════════════════════════ -->
+<section class="video-section">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title dark reveal">Vídeos</h2>
+    </div>
+    <div class="video-list">
+      <a href="https://youtu.be/mkggXE5e2yk?si=h1ZieSK2tsnvhr3W" target="_blank" rel="noopener" class="video-card reveal d1">
+        <img class="video-card-bg" src="https://img.youtube.com/vi/mkggXE5e2yk/maxresdefault.jpg" alt="FINANHUB Video" loading="lazy" onerror="this.src='https://img.youtube.com/vi/mkggXE5e2yk/0.jpg'">
+        <div class="video-card-overlay">
+          <div class="video-play-btn"><i class="fa fa-play"></i></div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ FOOTER ═══════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-body">
+    <div class="container">
+      <div class="footer-layout">
+
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <a href="/"><img src="https://finanhub.com.br/media/cache/logo/custom/domain_1/content_files/img_logo.png?1770814367" alt="FINANHUB" onerror="this.style.display='none'"></a>
+          </div>
+          <p class="footer-tagline">Onde negócios sérios se encontram. Conectando investidores e empreendedores em um ecossistema profissional.</p>
+          <div class="footer-social">
+            <a href="https://www.facebook.com/"  target="_blank" rel="noopener" class="social-btn" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="https://www.linkedin.com/"  target="_blank" rel="noopener" class="social-btn" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+            <a href="https://x.com/"             target="_blank" rel="noopener" class="social-btn" aria-label="X (Twitter)">
+              <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <a href="https://www.instagram.com/" target="_blank" rel="noopener" class="social-btn" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://tiktok.com/"        target="_blank" rel="noopener" class="social-btn" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+          </div>
+        </div>
+
+        <div>
+          <div class="footer-col-title">Conteúdo</div>
+          <div class="footer-links">
+            <a href="https://finanhub.com.br/"                    class="footer-link">Página Inicial</a>
+            <a href="https://finanhub.com.br/oportunidades"        class="footer-link">Empresas</a>
+            <a href="https://finanhub.com.br/artigo"               class="footer-link">Artigos</a>
+            <a href="https://finanhub.com.br/blog"                 class="footer-link">Blog</a>
+            <a href="https://finanhub.com.br/anuncie"              class="footer-link">Anunciar</a>
+          </div>
+        </div>
+
+        <div>
+          <div class="footer-col-title">Suporte</div>
+          <div class="footer-links">
+            <a href="https://finanhub.com.br/contato"              class="footer-link">Entre em Contato</a>
+            <a href="https://finanhub.com.br/perguntas-frequentes" class="footer-link">FAQ</a>
+            <a href="https://finanhub.com.br/termos-de-uso"        class="footer-link">Termos de Uso</a>
+            <a href="https://finanhub.com.br/politica-de-privacidade" class="footer-link">Política de Privacidade</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar">
+    <div class="container">
+      <div class="footer-bar-inner">
+        <span class="footer-copy">&copy; 2024 FINANHUB. Todos os direitos reservados.</span>
+        <a href="/anuncie" class="footer-link">Anuncie no FINANHUB <i class="fa fa-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════ MODAL ═══════════════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-label="Login ou Cadastro">
+    <div class="modal-head">
+      <button class="modal-tab active" onclick="switchPane('login', this)">Entrar</button>
+      <button class="modal-tab" onclick="switchPane('register', this)">Registrar</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Fechar"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Login -->
+      <div class="modal-pane active" id="pane-login">
+        <button class="social-signin-btn">
+          <img src="https://cdn.cdnlogo.com/logos/g/35/google-icon.svg" alt="" onerror="this.remove()">
+          Entrar com Google
+        </button>
+        <div class="or-divider">ou</div>
+        <form class="modal-form" onsubmit="return false;">
+          <input type="email" class="form-input" placeholder="Email" required autocomplete="email">
+          <div class="input-pass-wrap">
+            <input type="password" class="form-input" placeholder="Senha" id="loginPass" required autocomplete="current-password">
+            <button type="button" class="pass-toggle" onclick="togglePass('loginPass',this)" aria-label="Mostrar senha"><i class="fa fa-eye"></i></button>
+          </div>
+          <div class="form-row">
+            <label class="form-check"><input type="checkbox"> Lembrar-me</label>
+            <a href="#" class="form-link">Esqueceu a senha?</a>
+          </div>
+          <button type="submit" class="btn btn-primary form-submit">Entrar</button>
+        </form>
+        <p class="form-footer-note">Ao entrar, você concorda com os <a href="/termos-de-uso" class="form-link">Termos de Serviço</a> e <a href="/politica-de-privacidade" class="form-link">Política de Privacidade</a>.</p>
+      </div>
+
+      <!-- Register -->
+      <div class="modal-pane" id="pane-register">
+        <button class="social-signin-btn">
+          <img src="https://cdn.cdnlogo.com/logos/g/35/google-icon.svg" alt="" onerror="this.remove()">
+          Registrar com Google
+        </button>
+        <div class="or-divider">ou</div>
+        <form class="modal-form" onsubmit="return false;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <input type="text"     class="form-input" placeholder="Nome"      required autocomplete="given-name">
+            <input type="text"     class="form-input" placeholder="Sobrenome" required autocomplete="family-name">
+          </div>
+          <input type="email"    class="form-input" placeholder="Email"    required autocomplete="email">
+          <div class="input-pass-wrap">
+            <input type="password" class="form-input" placeholder="Senha"    id="regPass" required autocomplete="new-password">
+            <button type="button" class="pass-toggle" onclick="togglePass('regPass',this)" aria-label="Mostrar senha"><i class="fa fa-eye"></i></button>
+          </div>
+          <button type="submit" class="btn btn-primary form-submit">Criar Conta</button>
+        </form>
+        <p class="form-footer-note">Ao cadastrar, você concorda com os <a href="/termos-de-uso" class="form-link">Termos de Serviço</a> e <a href="/politica-de-privacidade" class="form-link">Política de Privacidade</a>.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Back to top -->
+<button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Voltar ao topo">
+  <i class="fa fa-arrow-up"></i>
+</button>
+
+<!-- ═══════════════════════════════════ JAVASCRIPT ═══════════════════════════════════ -->
+<script>
+/* ── Responsive header ── */
+(function() {
+  const header = document.getElementById('header');
+  const mobileControls = document.querySelector('.header-mobile');
+  const desktopNav = document.querySelector('.nav');
+  const desktopRight = document.querySelector('.header-right');
+
+  function checkBreakpoint() {
+    const isMobile = window.innerWidth <= 960;
+    mobileControls.style.display = isMobile ? 'flex' : 'none';
+    desktopNav.style.display     = isMobile ? 'none' : 'flex';
+    desktopRight.style.display   = isMobile ? 'none' : 'flex';
+  }
+  checkBreakpoint();
+  window.addEventListener('resize', checkBreakpoint);
+
+  window.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', window.scrollY > 10);
+    document.getElementById('backTop').classList.toggle('show', window.scrollY > 400);
+  });
+})();
+
+/* ── Mobile menu ── */
+let menuOpen = false;
+function toggleMenu() {
+  menuOpen = !menuOpen;
+  const nav  = document.getElementById('mobileNav');
+  const icon = document.getElementById('menuIcon');
+  const btn  = document.getElementById('menuToggle');
+  nav.classList.toggle('open', menuOpen);
+  nav.setAttribute('aria-hidden', String(!menuOpen));
+  btn.setAttribute('aria-expanded', String(menuOpen));
+  icon.className = menuOpen ? 'fa fa-xmark' : 'fa fa-bars';
+  document.body.style.overflow = menuOpen ? 'hidden' : '';
+}
+
+/* ── Modal ── */
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+function switchPane(id, btn) {
+  document.querySelectorAll('.modal-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('pane-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+function togglePass(id, btn) {
+  const input = document.getElementById(id);
+  const icon  = btn.querySelector('i');
+  const show  = input.type === 'password';
+  input.type  = show ? 'text' : 'password';
+  icon.className = show ? 'fa fa-eye-slash' : 'fa fa-eye';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ── AI Toggle ── */
+function toggleAI(el) {
+  el.classList.toggle('on');
+  el.setAttribute('aria-checked', el.classList.contains('on').toString());
+}
+
+/* ── Scroll reveal (IntersectionObserver) ── */
+(function() {
+  const selectors = '.reveal, .reveal-left, .reveal-right';
+  const els = document.querySelectorAll(selectors);
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  els.forEach(el => io.observe(el));
+})();
+
+/* ── Hero particle canvas ── */
+(function() {
+  const canvas = document.getElementById('heroCanvas');
+  const ctx    = canvas.getContext('2d');
+  let W, H, pts = [], raf;
+
+  function resize() {
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+
+  function mkPt() {
+    return {
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.4 + .3,
+      vx: (Math.random() - .5) * .3,
+      vy: (Math.random() - .5) * .3,
+      a: Math.random() * .4 + .05
+    };
+  }
+
+  function init(n) {
+    pts = Array.from({ length: n }, mkPt);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x;
+        const dy = pts[i].y - pts[j].y;
+        const d  = Math.sqrt(dx*dx + dy*dy);
+        if (d < 100) {
+          ctx.strokeStyle = `rgba(18,179,175,${(1 - d/100) * .1})`;
+          ctx.lineWidth   = .5;
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(18,179,175,${p.a})`;
+      ctx.fill();
+    });
+    raf = requestAnimationFrame(draw);
+  }
+
+  const ro = new ResizeObserver(() => { resize(); init(60); });
+  ro.observe(canvas.parentElement);
+  resize(); init(60); draw();
+})();
+
+/* ── Stats particle canvas (lighter) ── */
+(function() {
+  const canvas = document.getElementById('statsCanvas');
+  const ctx    = canvas.getContext('2d');
+  let W, H, pts = [];
+
+  function resize() {
+    const sec = document.getElementById('statsSection');
+    W = canvas.width  = sec.offsetWidth;
+    H = canvas.height = sec.offsetHeight;
+  }
+
+  function mkPt() {
+    return {
+      x: Math.random() * W, y: Math.random() * H,
+      r: Math.random() * 1.2 + .2,
+      vx: (Math.random() - .5) * .25,
+      vy: (Math.random() - .5) * .25,
+      a: Math.random() * .3 + .03
+    };
+  }
+
+  function anim() {
+    ctx.clearRect(0, 0, W, H);
+    const g = ctx.createRadialGradient(W*.75, H*.5, 0, W*.75, H*.5, W*.4);
+    g.addColorStop(0, 'rgba(18,179,175,.05)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(18,179,175,${p.a})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(anim);
+  }
+
+  window.addEventListener('resize', () => { resize(); pts = Array.from({length:50}, mkPt); });
+  resize();
+  pts = Array.from({length:50}, mkPt);
+  anim();
+})();
+
+/* ── Counter animation ── */
+(function() {
+  const items   = document.querySelectorAll('.stat-item');
+  const section = document.getElementById('statsSection');
+  let   fired   = false;
+
+  function easeOut(t) { return 1 - Math.pow(2, -10*t); }
+
+  function animateNum(el) {
+    const target   = parseFloat(el.dataset.target);
+    const suffix   = el.dataset.suffix || '';
+    const fmt      = el.dataset.format;
+    const numEl    = el.querySelector('.stat-num');
+    const duration = 1800;
+    let   start    = null;
+
+    function step(ts) {
+      if (!start) start = ts;
+      const t   = Math.min((ts - start) / duration, 1);
+      const val = easeOut(t) * target;
+      numEl.textContent = (fmt === 'k' ? '1.000' : Math.round(val).toString()) + suffix;
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && !fired) {
+        fired = true;
+        items.forEach((el, i) => {
+          setTimeout(() => {
+            el.classList.add('visible');
+            animateNum(el);
+          }, i * 80);
+        });
+        io.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+
+  io.observe(section);
+})();
+</script>
+</body>
+</html>

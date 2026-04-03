@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-finan-900: #0f172a;
+  --color-finan-800: #1e293b;
+  --color-finan-700: #334155;
+  --color-finan-100: #f1f5f9;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+}
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #020817;
+    --border: #e2e8f0;
+  }
+
+  .dark {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --border: #1e293b;
+  }
+}
+
+body {
+  background-color: theme('colors.finan.900', var(--background));
+  color: theme('colors.finan.100', var(--foreground));
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism custom classes */
+.glass-panel {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.input-premium {
+  @apply w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder:text-slate-500;
+}
+
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors shadow-lg shadow-blue-500/20 active:scale-95 duration-200;
+}
