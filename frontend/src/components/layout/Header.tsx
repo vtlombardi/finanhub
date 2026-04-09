@@ -1,36 +1,66 @@
 'use client';
-import { useAuth } from '@/features/auth/AuthProvider';
-import { Bell, UserCircle, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
-export function Header() {
-  const { user, logout } = useAuth(); // Estado injetado JWT Context
+interface HeaderProps {
+  onOpenAuth?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onOpenAuth }) => {
+  const pathname = usePathname();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const toggleMobileNav = () => setMobileNavOpen(!mobileNavOpen);
 
   return (
-    <header className="h-16 border-b border-[#1e293b] glass-panel flex items-center justify-between px-8 sticky top-0 z-10 w-full ml-0">
-      <div className="flex-1">
-        <h2 className="text-sm font-medium text-slate-400">
-          Backoffice <span className="text-slate-600 mx-2">/</span> {user?.tenantId || 'Tenant Local'}
-        </h2>
+    <header className="header" data-type="2" is-sticky="false" is-inverse="false" has-opacity="true">
+      <div className="header-content">
+        <div className="container">
+          <div className="wrapper">
+            <div className="content-left">
+              <a href="/" target="_parent" title="" className="header-logo larger-h">
+                <img 
+                   src="https://finanhub.com.br/media/cache/logo/custom/domain_1/content_files/img_logo.png?1770814367" 
+                   alt="FINANHUB" 
+                />
+              </a>
+              <nav className="header-navbar">
+                <Link href="/" className={`navbar-link ${pathname === '/' ? 'is-active' : ''}`}>Página Inicial</Link>
+                <Link href="/nossa-empresa" className={`navbar-link ${pathname === '/nossa-empresa' ? 'is-active' : ''}`}>Nossa Empresa</Link>
+                <Link href="/oportunidades" className={`navbar-link ${pathname === '/oportunidades' ? 'is-active' : ''}`}>Oportunidades</Link>
+                <Link href="/deal" className={`navbar-link ${pathname === '/deal' ? 'is-active' : ''}`}>Deal </Link>
+                <Link href="/anuncie" className={`navbar-link ${pathname === '/anuncie' ? 'is-active' : ''}`}>Planos</Link>
+                <Link href="/contato" className={`navbar-link ${pathname === '/contato' ? 'is-active' : ''}`}>Contato</Link>
+              </nav>
+              <div className="content-mobile">
+                <button className="toggler-button search-toggler"><i className="fa fa-search"></i></button>
+                <button className="toggler-button navbar-toggler" onClick={toggleMobileNav}><i className="fa fa-bars"></i></button>
+              </div>
+            </div>
+            <div className="content-right">
+              <Link href="/anuncie" className="button button-bg is-inverse">Anuncie aqui</Link>
+              <a href="javascript:void(0);" onClick={(e) => { e.preventDefault(); onOpenAuth?.(); }} className="button button-bg is-primary">Entrar</a>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div className="flex items-center gap-4">
-        <button className="text-slate-400 hover:text-white transition-colors relative">
-          <Bell size={20} />
-          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-        </button>
-
-        <div className="h-6 w-px bg-slate-700 mx-2"></div>
-
-        <div className="flex items-center gap-3">
-          <UserCircle size={24} className="text-slate-400" />
-          <span className="text-sm font-medium text-slate-200">
-            {user?.email || 'Nenhum Usuário'}
-          </span>
-          <button onClick={logout} className="text-slate-500 hover:text-red-400 transition-colors ml-2" title="Sair da plataforma">
-             <LogOut size={16}/>
-          </button>
+      <div className={`navbar-mobile ${mobileNavOpen ? 'open' : ''}`} id="mobileNav">
+        <div className="navbar-links">
+          <a href="javascript:void(0);" onClick={(e) => { e.preventDefault(); onOpenAuth?.(); }} className="bar-link">Entrar</a>
+        </div>
+        <nav className="navbar-links">
+          <Link href="/" className={`navbar-link ${pathname === '/' ? 'is-active' : ''}`}>Página Inicial</Link>
+          <Link href="/nossa-empresa" className={`navbar-link ${pathname === '/nossa-empresa' ? 'is-active' : ''}`}>Nossa Empresa</Link>
+          <Link href="/oportunidades" className={`navbar-link ${pathname === '/oportunidades' ? 'is-active' : ''}`}>Oportunidades</Link>
+          <Link href="/deal" className={`navbar-link ${pathname === '/deal' ? 'is-active' : ''}`}>Deal</Link>
+          <Link href="/anuncie" className={`navbar-link ${pathname === '/anuncie' ? 'is-active' : ''}`}>Planos</Link>
+          <Link href="/contato" className={`navbar-link ${pathname === '/contato' ? 'is-active' : ''}`}>Contato</Link>
+        </nav>
+        <div className="navbar-links">
+          <Link href="/anuncie" className="navbar-link">Anuncie aqui</Link>
         </div>
       </div>
     </header>
   );
-}
+};

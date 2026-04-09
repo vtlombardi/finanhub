@@ -1,9 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function SearchSection() {
+  const router = useRouter();
   const [isAiMode, setIsAiMode] = useState(false);
+  const [query, setQuery] = useState("");
+  const [location, setLocation] = useState("");
 
   const toggleAiMode = () => {
     setIsAiMode((prev) => !prev);
@@ -11,8 +15,12 @@ export function SearchSection() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(`Searching... AI Mode: ${isAiMode}`);
-    // Futura integração com o Backend ou Agentes de IA
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (location) params.set("location", location);
+    if (isAiMode) params.set("ai", "true");
+    
+    router.push(`/oportunidades?${params.toString()}`);
   };
 
   return (
@@ -47,13 +55,21 @@ export function SearchSection() {
                 type="text"
                 placeholder="Buscar por oportunidades, setores ou palavras-chave..."
                 aria-label="Busca"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
             </div>
             <div className="search-field">
               <div className="search-field-icon">
                 <i className="fa fa-map-marker"></i>
               </div>
-              <input type="text" placeholder="Localização..." aria-label="Localização" />
+              <input 
+                type="text" 
+                placeholder="Localização..." 
+                aria-label="Localização" 
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
             </div>
             <div className="search-action">
               <button className="btn btn-primary" type="submit">

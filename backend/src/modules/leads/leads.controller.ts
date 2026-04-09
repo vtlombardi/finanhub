@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { LeadsService } from './leads.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CreateLeadDto, CreateProposalDto, UpdateProposalStatusDto } from './dto/create-lead.dto';
 
 @Controller('leads')
 @UseGuards(JwtAuthGuard)
@@ -19,13 +20,11 @@ export class LeadsController {
   @Post()
   async createLead(
     @Req() req: any,
-    @Body() body: { listingId: string; message?: string },
+    @Body() body: CreateLeadDto,
   ) {
     return this.leadsService.createLead(
-      req.user.tenantId,
       req.user.userId,
-      body.listingId,
-      body.message ?? '',
+      body,
     );
   }
 
@@ -43,7 +42,7 @@ export class LeadsController {
   async createProposal(
     @Param('leadId') leadId: string,
     @Req() req: any,
-    @Body() body: { valueOffered: number; conditions?: string },
+    @Body() body: CreateProposalDto,
   ) {
     return this.leadsService.createProposal(
       leadId,
@@ -57,7 +56,7 @@ export class LeadsController {
   async updateProposalStatus(
     @Param('id') proposalId: string,
     @Req() req: any,
-    @Body() body: { status: string },
+    @Body() body: UpdateProposalStatusDto,
   ) {
     return this.leadsService.updateProposalStatus(
       proposalId,

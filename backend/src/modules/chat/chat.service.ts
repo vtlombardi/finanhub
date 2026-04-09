@@ -1,127 +1,58 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { PlansService } from '../plans/plans.service';
 
 @Injectable()
 export class ChatService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private plansService: PlansService,
+  ) {}
 
   /**
-   * Cria ou retorna thread existente entre um investidor e um listing.
-   * Garante que ambos os participantes (investidor + owner do tenant) sejam registrados.
+   * Lista todas as conversas em que o usuário participa.
+   * Administradores podem ver todas as conversas do tenant.
    */
-  async getOrCreateThread(listingId: string, investorId: string) {
-    const listing = await this.prisma.listing.findUnique({
-      where: { id: listingId },
-      select: { tenantId: true, id: true },
-    });
-
-    if (!listing) throw new NotFoundException('Listing não encontrado.');
-
-    // Buscar thread existente onde o investidor é participante
-    const existingThread = await this.prisma.chatThread.findFirst({
-      where: {
-        listingId,
-        participants: { some: { userId: investorId } },
-      },
-      include: {
-        participants: { include: { user: { select: { id: true, fullName: true } } } },
-        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
-      },
-    });
-
-    if (existingThread) return existingThread;
-
-    // Buscar o owner/admin do tenant para adicionar como participante
-    const tenantOwner = await this.prisma.user.findFirst({
-      where: { tenantId: listing.tenantId, role: { in: ['OWNER', 'ADMIN'] } },
-      select: { id: true },
-    });
-
-    const ownerUserId = tenantOwner?.id;
-
-    // Criar thread com participantes
-    const thread = await this.prisma.chatThread.create({
-      data: {
-        tenantId: listing.tenantId,
-        listingId,
-        participants: {
-          create: [
-            { userId: investorId },
-            ...(ownerUserId && ownerUserId !== investorId
-              ? [{ userId: ownerUserId }]
-              : []),
-          ],
+  async getThreads(userId: string, tenantId: string, role: string) {
+    if (role === 'ADMIN' || role === 'OWNER') {
+      return this.prisma.chatThread.findMany({
+        where: { tenantId },
+        include: {
+          participants: { include: { user: { select: { id: true, fullName: true, email: true } } } },
+          messages: { take: 1, orderBy: { createdAt: 'desc' } },
         },
-      },
-      include: {
-        participants: { include: { user: { select: { id: true, fullName: true } } } },
-      },
-    });
-
-    return thread;
-  }
-
-  /**
-   * Envia mensagem no thread. Verifica que o sender é participante.
-   */
-  async sendMessage(threadId: string, senderId: string, body: string) {
-    // Verificar participação
-    const participant = await this.prisma.chatParticipant.findUnique({
-      where: { threadId_userId: { threadId, userId: senderId } },
-    });
-
-    if (!participant) {
-      throw new ForbiddenException('Você não é participante desta conversa.');
-    }
-
-    const message = await this.prisma.chatMessage.create({
-      data: { threadId, senderId, body },
-      include: { sender: { select: { id: true, fullName: true } } },
-    });
-
-    // Atualizar timestamp do thread
-    await this.prisma.chatThread.update({
-      where: { id: threadId },
-      data: { updatedAt: new Date() },
-    });
-
-    // Criar notificação para os outros participantes
-    const otherParticipants = await this.prisma.chatParticipant.findMany({
-      where: { threadId, userId: { not: senderId } },
-    });
-
-    if (otherParticipants.length > 0) {
-      await this.prisma.notification.createMany({
-        data: otherParticipants.map((p) => ({
-          userId: p.userId,
-          type: 'NEW_MESSAGE',
-          title: 'Nova mensagem',
-          body: `${message.sender.fullName}: "${body.substring(0, 80)}${body.length > 80 ? '...' : ''}"`,
-          metadata: { threadId, listingId: null },
-        })),
+        orderBy: { updatedAt: 'desc' },
       });
     }
 
-    return message;
+    return this.prisma.chatThread.findMany({
+      where: {
+        participants: { some: { userId } },
+      },
+      include: {
+        participants: { include: { user: { select: { id: true, fullName: true, email: true } } } },
+        messages: { take: 1, orderBy: { createdAt: 'desc' } },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
   }
 
   /**
-   * Retorna mensagens de um thread (com verificação de participação).
+   * Busca o histórico de mensagens de uma thread específica.
    */
-  async getMessages(threadId: string, userId: string) {
-    const participant = await this.prisma.chatParticipant.findUnique({
-      where: { threadId_userId: { threadId, userId } },
+  async getMessages(threadId: string, userId: string, role: string) {
+    const thread = await this.prisma.chatThread.findUnique({
+      where: { id: threadId },
+      include: { participants: true },
     });
 
-    if (!participant) {
-      throw new ForbiddenException('Acesso negado.');
+    if (!thread) throw new NotFoundException('Conversa não encontrada.');
+
+    // Segurança: Usuário comum só vê se for participante. Admin vê tudo do tenant.
+    const isParticipant = thread.participants.some(p => p.userId === userId);
+    if (role !== 'ADMIN' && role !== 'OWNER' && !isParticipant) {
+      throw new ForbiddenException('Você não tem acesso a esta conversa.');
     }
-
-    // Marcar mensagens dos outros como lidas
-    await this.prisma.chatMessage.updateMany({
-      where: { threadId, senderId: { not: userId }, isRead: false },
-      data: { isRead: true },
-    });
 
     return this.prisma.chatMessage.findMany({
       where: { threadId },
@@ -131,55 +62,69 @@ export class ChatService {
   }
 
   /**
-   * Inbox: todas as threads onde o usuário participa, com última mensagem e count de não-lidas.
+   * Envia uma mensagem em uma thread existente.
+   * Aplica a regra de negócio: Planos Basic/Starter só recebem mensagens.
    */
-  async getInbox(userId: string) {
-    const threads = await this.prisma.chatThread.findMany({
-      where: { participants: { some: { userId } } },
-      include: {
-        listing: { select: { id: true, title: true, slug: true } },
-        participants: { include: { user: { select: { id: true, fullName: true } } } },
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          include: { sender: { select: { fullName: true } } },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
+  async sendMessage(senderId: string, tenantId: string, role: string, threadId: string, body: string) {
+    // 1. Verificação de Plano (Somente para usuários comuns)
+    if (role !== 'ADMIN' && role !== 'OWNER') {
+      const { features } = await this.plansService.getUsage(tenantId);
+      if (!features.chat) {
+        throw new ForbiddenException(
+          'Seu plano atual permite apenas o recebimento de mensagens. Faça o upgrade para interagir.',
+        );
+      }
+    }
+
+    // 2. Verificação de Participação/Existência
+    const thread = await this.prisma.chatThread.findUnique({
+      where: { id: threadId },
+      include: { participants: true },
     });
 
-    // Contar não lidas por thread
-    const result = await Promise.all(
-      threads.map(async (thread) => {
-        const unreadCount = await this.prisma.chatMessage.count({
-          where: { threadId: thread.id, senderId: { not: userId }, isRead: false },
-        });
-        return { ...thread, unreadCount };
-      }),
-    );
+    if (!thread) throw new NotFoundException('Conversa inexistente.');
 
-    return result;
+    // 3. Criação da Mensagem e Atualização do Thread
+    return this.prisma.$transaction(async (tx) => {
+      const message = await tx.chatMessage.create({
+        data: {
+          threadId,
+          senderId,
+          body,
+        },
+      });
+
+      await tx.chatThread.update({
+        where: { id: threadId },
+        data: { updatedAt: new Date() },
+      });
+
+      return message;
+    });
   }
 
   /**
-   * Total global de mensagens não lidas.
+   * Cria uma nova thread (ex: suporte ou interesse em anúncio).
    */
-  async getUnreadCount(userId: string) {
-    const participantThreads = await this.prisma.chatParticipant.findMany({
-      where: { userId },
-      select: { threadId: true },
-    });
+  async createThread(userId: string, tenantId: string, targetAdminId?: string, listingId?: string) {
+    // Busca um Admin padrão se não houver um ID específico (ou o OWNER do tenant)
+    const admin = targetAdminId 
+      ? { id: targetAdminId } 
+      : await this.prisma.user.findFirst({ where: { tenantId, role: 'OWNER' } });
 
-    const threadIds = participantThreads.map((p) => p.threadId);
+    if (!admin) throw new NotFoundException('Administrador de destino não encontrado.');
 
-    const count = await this.prisma.chatMessage.count({
-      where: {
-        threadId: { in: threadIds },
-        senderId: { not: userId },
-        isRead: false,
+    return this.prisma.chatThread.create({
+      data: {
+        tenantId,
+        listingId: listingId || undefined,
+        participants: {
+          create: [
+            { userId: userId },
+            { userId: admin.id },
+          ],
+        },
       },
     });
-
-    return { unread: count };
   }
 }

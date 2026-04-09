@@ -1,37 +1,57 @@
-# FINANHUB - Documentação Módulo Frontend Enterprise
+# FINANHUB - Módulo Frontend (Next.js)
 
-## 1. Visão do Frontend
-Fornecer a interface premium baseada na experiência "Marketplace/SaaS corporativo". Next.js (App Router) domina o SSR focando em SEO veloz para anúncios de fusão/venda e React-Client garante um painel administrativo liso para a gestão de conversas em M&A B2B.
+## 1. Responsabilidade do Módulo
+Prover a interface de usuário (UI/UX) de alta fidelidade para o marketplace FINANHUB. Responsável por renderização SSR (SEO), gestão de estado de interface, captura de leads e navegação do dashboard.
 
-## 2. Padrão Organizacional Limpo (/frontend/src)
-Para que milhares de anúncios simultâneos rodem, dividimos as responsabilidades em taxonomia forte de pastas evitando "Componentes Fitas Ocultas".
-- **`/app`**: Encapsulador final de rotas de página organizadas por Grupos Lógicos, não por arquivos longos.
-- **`/components`**: Estritamente pedaços de UI "burros" e visuais ou layouts estruturais como Heads e Carousels.
-- **`/features`**: Toda a aglomeração lógica vertical. O "State de Auth" só existe dentro de `/features/auth`.
-- **`/services`**: A API layer centralizada e Interceptor HTTP. Componente e Views nunca sabem onde fica a URL do backend.
-- **`/store`**: Extensão volátil (Zustand) guardando estado do tenant.
-- **`/hooks`**: Funções abstratas React puras que injetam mutações externas para UI.
-- **`/types`**: Os contratos do TS espelhando `/backend`.
-- **`/lib`**: Dependências configuradas (exemplo: prisma mock ou lib de PDF genérica isolada).
-- **`/utils`**: Pure functions para validações (Sem dependências em React Native ou Axios).
+## 2. O Que Ele Pode Fazer
+- Renderizar páginas complexas de anúncios e dashboards.
+- Gerenciar estado local e global de UI (Zustand).
+- Consumir APIs REST via camada de `services/`.
+- Gating de interface via componente `PlanGate` (BASE, PROFESSIONAL, ELITE).
+- Controle reativo de limites de uso via hook `useSubscription`.
+- Renderização de IA Banners (HayiaInsightCard) para upsell contextual.
+- Validar formulários (Zod/React Hook Form).
+- Lidar com autenticação via Cookies HTTP-Only (injetados pelo backend).
 
-## 3. Topologia de Rotas Desacopladas (Route Groups)
-- **`(public)`**: Rotas expostas de alto tráfego que batem nos caches ISR/SSG do Vercel/Next (Busca SEO).
-   - `/ads`: Vitrine listando deals.
-- **`(auth)`**: Domínio da entrada.
-   - `/login`
-   - `/register`
-- **`(dashboard)`**: O núcleo Multi-tenant privado (Onde o B2B acontece).
-   - `/dashboard`: Painel base.
-   - `/dashboard/leads`: Gerencimento.
+## 3. O Que Ele NÃO Pode Fazer
+- **NUNCA** acessar o banco de dados diretamente.
+- **NUNCA** conter lógica de negócio pesada (Cálculos de ROI, validações de fraude, etc. devem estar no Backend).
+- **NUNCA** importar código das pastas `/backend`, `/database` ou `/ai-agents`.
+- **NUNCA** armazenar segredos de infraestrutura (apenas variáveis públicas prefixadas com `NEXT_PUBLIC_`).
 
-## 4. Camada de Integração API
-Desenhada em Classes Singleton/Static isoladas dentro do `/services/api.ts` e `/services/auth.service.ts`.
-Todo payload enviado do Formulário atravessa essa camada, garantindo que o token embutido seja injetado invisivelmente nas Headers. 
+## 4. Dependências Permitidas
+- Framework: Next.js 16.x.
+- UI: TailwindCSS, Lucide Icons, Shadcn/UI (se aplicável).
+- State: Zustand.
+- API: Axios.
+- Validation: Zod, React Hook Form.
 
-## 5. Estratégia de Autenticação JWT 
-Adotada via Instância React Context em `/features/auth/AuthProvider.tsx`, repassando o objeto `user: ITenant` limpo para a hierarquia da tela. O token material (string Base64) vive apenas em cache seguro/Http-cookie.
+## 5. Interfaces de Comunicação
+- **Backend**: via HTTPS/REST (Endpoints no padrão JSON).
+- **Storage**: via Presigned URLs (Upload direto para o bucket).
 
-## 6. Backlog Técnico do Frontend
-- [x] Configurar interceptor Axios interceptando erro Code 401 e executando `logout` forçado global.
-- [ ] Converter listagens cruas para tipagens Zod de validação local nos campos do form `/anuncie`.
+## 6. Variáveis de Ambiente Usadas
+- `NEXT_PUBLIC_API_URL`: URL base do backend.
+- `NEXT_PUBLIC_APP_URL`: URL base do próprio frontend.
+
+## 7. Como Rodar Isoladamente
+1. `cd frontend`
+2. `npm install`
+3. `npm run dev`
+4. O frontend entrará em modo "Isolado" se o backend estiver offline, utilizando falbacks no interceptor do Axios.
+
+## 8. Como Testar Isoladamente
+- **Unitários**: `npm run test` (Vitest/Jest).
+- **Componentes**: Storybook (se configurado).
+- **Lint**: `npm run lint`.
+
+## 9. Como Integrar Com o Resto
+A integração ocorre configurando a `NEXT_PUBLIC_API_URL` no `.env.local` para apontar para o container/host do Backend. A autenticação é transparente via Cookies.
+
+## 10. Estrutura de Pastas Explicada
+- `src/app/`: Rotas Next.js (App Router).
+- `src/components/`: Componentes de UI reutilizáveis (Hero, SearchBar, etc).
+- `src/services/`: Camada única de comunicação com APIs.
+- `src/store/`: Gestão de estado global (Zustand).
+- `src/types/`: Definição de interfaces TS (alinhadas com os contratos do Backend).
+- `src/hooks/`: Hooks customizados para lógica de UI reutilizável.

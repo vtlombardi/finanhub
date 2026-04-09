@@ -1,19 +1,42 @@
-# FINANHUB - Governança Documental Geral (Docs Repository)
+# FINANHUB - Módulo Documentação (Docs & ADRs)
 
-## 1. Visão da Plataforma Documental
-Este diretório será a biblioteca contínua de "Onboarding e Disastre-Recovery" mantendo as instruções claras em formato unificador (ADRs e Guias Markdown ou OpenAPI Swagger).
+## 1. Responsabilidade do Módulo
+Centralizar o conhecimento técnico, arquitetural e de produto do ecossistema. Responsável por manter registros de decisões de arquitetura (ADRs), manuais de onboarding e glossário de termos B2B/M&A.
 
-## 2. Conteúdos Necessários nesta Pasta
-- `ADRs/` (Architecture Decision Records): Para listar o pretexto base do motivo de qualquer adoção fundamental perante ferramentas, stack e lógicas e que nunca devam ser contestadas depois à posteriori desnecessariamente.
-- `API-Spec/`: Swagger.yaml ou definições geradas puramente que englobam a base total de uso das URIs Backend.
+## 2. O Que Ele Pode Fazer
+- Armazenar ADRs (Architecture Decision Records).
+- Conter diagramas de fluxo e arquitetura (Mermaid/PNG).
+- Prover guias de configuração de ambiente para novos desenvolvedores.
+- Documentar contratos de API e modelos de dados.
 
-## 3. Manuais de Onboarding, Deploy Técnico e Runbooks
-Adoção dos diretórios que permitem entrada contínua de novos membros da engenharia nas equipes: Entendimento do uso de local variables, guia sequencial do fluxo de propostas a ser compilado sem ambiguidade.
-Deverão existir Playbooks de resolução de problema. (Exemplo prático: O que a TI ou os desenvolvedores devem rodar de imediato se o Redis cair ou ficar obsoleto em fila massiva nos AI Agents? Respostas curtas).
+## 3. O Que Ele NÃO Pode Fazer
+- **NUNCA** conter código executável da aplicação.
+- **NUNCA** armazenar credenciais ou segredos em texto claro.
+- **NUNCA** ser desatualizado após mudanças críticas em outros módulos (Documentação Viva).
 
-## 4. Padrões Acordados
-Versionamento documentado global do repositório baseado em semantic versioning. Convenções linguísticas descritas e mantidas centralmente (exemplo no caso FINANHUB de mantermos padronizações inglesas para todas as declarações de variáveis multi-tenant e componentes).
+## 4. Dependências Permitidas
+- Formatos: Markdown (.md), Diagramas (.mermaid).
+- Ferramentas: Static site generators (ex: Docusaurus/MkDocs) se necessário no futuro.
 
-## 5. Backlog da Documentação
-- [] Consolidar o diagrama Macro do projeto B2B em versão PNG/Mermaid embedada aqui no futuro próximo.
-- [] Inserir instruções completas de Build & Serve base zero no `README` adjunto para developers entrarem em até 5m e rodarem TUDO estático no local em um single command.
+## 5. Interfaces de Comunicação
+- **Desenvolvedores**: via leitura direta no repositório ou portal de docs.
+
+## 6. Variáveis de Ambiente Usadas
+- N/A (Módulo estático).
+
+## 7. Como Rodar Isoladamente
+1. `cd docs`
+2. Utilizar um visualizador de Markdown (como VSCode ou GitHub).
+
+## 8. Como Testar Isoladamente
+- **Lint**: `markdownlint` para garantir padrão de escrita.
+- **Links**: Verificar integridade de links internos entre documentos.
+
+## 9. Como Integrar Com o Resto
+O módulo `docs/` serve como o manual de instruções para todos os outros módulos. Ele é a primeira parada para entender como o Frontend consome o Backend ou como a IA processa os dados.
+
+## 10. Estrutura de Pastas Explicada
+- `adr/`: Registros históricos de decisões técnicas.
+- `api/`: Detalhes técnicos de endpoints e payloads.
+- `onboarding/`: Guias para novos membros do time.
+- `assets/`: Imagens, diagramas e mídias de suporte.

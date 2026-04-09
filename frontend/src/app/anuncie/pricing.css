@@ -1,0 +1,521 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
+
+:root {
+  --bg-dark: #04060f;
+  --bg-surface: #0a0c16;
+  --accent-cyan: oklch(75% .18 190); /* Cyan premium mais suave */
+  --accent-cyan-glow: oklch(75% .18 190 / 15%);
+  --glass-bg: rgba(255, 255, 255, 0.02);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(16px);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7); /* Contraste melhorado */
+  --section-padding: 80px; /* Reduzido de 160px para fluxo contínuo */
+}
+
+.pricing-container {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  overflow-x: hidden;
+  position: relative;
+  letter-spacing: -0.01em;
+}
+
+/* Background Atmosphere & Texture - Deep Layering */
+.pricing-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(circle at center, black, transparent 90%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Ambient Lights - Scroll Reactive Simulation */
+.pricing-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 50% -10%, rgba(0, 184, 178, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 0% 40%, rgba(0, 184, 178, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 100% 60%, rgba(0, 184, 178, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 50% 90%, rgba(0, 184, 178, 0.08) 0%, transparent 50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pricing-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Glassmorphism Refined */
+.glass-card {
+  background: rgba(255, 255, 255, 0.015);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 32px;
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.03), transparent 60%);
+  pointer-events: none;
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 184, 178, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateY(-8px);
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* Hero Section Refinements */
+.hero-section {
+  padding: 120px 20px 40px;
+  text-align: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  padding: 10px 20px;
+  background: rgba(0, 184, 178, 0.08);
+  border: 1px solid rgba(0, 184, 178, 0.2);
+  border-radius: 100px;
+  color: var(--accent-cyan);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+}
+
+.hero-title {
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  margin-bottom: 32px;
+  letter-spacing: -0.04em;
+  background: linear-gradient(to bottom, #fff, rgba(255,255,255,0.8));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  max-width: 1000px;
+  margin-inline: auto;
+  text-wrap: balance;
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  max-width: 680px;
+  margin-inline: auto;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+/* Pricing Section */
+.pricing-section {
+  padding: var(--section-padding) 0;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.plan-card {
+  padding: 40px; /* Reduzido de 56px */
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-card.highlight {
+  border-color: rgba(0, 184, 178, 0.4);
+  background: radial-gradient(circle at top right, rgba(0, 184, 178, 0.08), transparent 70%);
+  transform: scale(1.03);
+  box-shadow: 0 0 100px -20px var(--accent-cyan-glow);
+  z-index: 2;
+}
+
+.plan-card.highlight:hover {
+  transform: scale(1.05) translateY(-8px);
+}
+
+.plan-impact-box {
+  background: rgba(0, 184, 178, 0.06);
+  border: 1px solid rgba(0, 184, 178, 0.15);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.plan-impact-box span {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.plan-badge {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  padding: 6px 14px;
+  background: var(--accent-cyan);
+  color: #000;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.plan-name {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.plan-price {
+  font-size: 56px;
+  font-weight: 800;
+  margin-bottom: 32px;
+  letter-spacing: -0.03em;
+}
+
+.plan-price span {
+  font-size: 18px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px 0; /* Reduzido de 48px */
+  flex-grow: 1;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.feature-icon {
+  color: var(--accent-cyan);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Workflow Section Refined */
+.workflow-section {
+  padding: var(--section-padding) 20px;
+  background: linear-gradient(to bottom, transparent, rgba(10, 12, 22, 0.5), transparent);
+}
+
+.section-tag {
+  color: var(--accent-cyan);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 11px;
+  margin-bottom: 24px;
+  display: block;
+  text-align: center;
+}
+
+.section-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 48px; /* Reduzido de 80px */
+  letter-spacing: -0.03em;
+}
+
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 24px;
+}
+
+.workflow-step {
+  text-align: center;
+  position: relative;
+}
+
+.step-number {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px; /* Quadrado arredondado premium */
+  border: 1px solid rgba(0, 184, 178, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px; /* Reduzido de 28px */
+  font-weight: 800;
+  color: var(--accent-cyan);
+  background: rgba(0, 184, 178, 0.05);
+  font-size: 20px;
+}
+
+.step-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 12px; /* Reduzido de 16px */
+  letter-spacing: -0.01em;
+}
+
+.step-desc {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* FAQ Elegance */
+.faq-section {
+  padding: var(--section-padding) 20px;
+}
+
+.faq-card {
+  padding: 32px; /* Reduzido de 40px */
+  background: rgba(255, 255, 255, 0.015);
+  margin-bottom: 16px; /* Reduzido de 24px */
+  border-radius: 24px;
+}
+
+.faq-card h4 {
+  font-weight: 800;
+  margin-bottom: 12px; /* Reduzido de 16px */
+  color: #fff;
+}
+
+/* Promotional Banners Section */
+.banners-section {
+  padding: var(--section-padding) 20px;
+  position: relative;
+}
+
+.promo-banners-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px; /* Reduzido de 48px */
+  align-items: stretch;
+}
+
+.promo-banner {
+  padding: 48px; /* Reduzido de 64x48 */
+  min-height: 480px; /* Reduzido de 520px */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  border-radius: 40px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+}
+
+/* Identidades Distintas */
+.banner-anuncie {
+  border-color: rgba(0, 184, 178, 0.15);
+  background: radial-gradient(circle at top left, rgba(0, 184, 178, 0.05), transparent 70%);
+}
+
+.banner-hayia {
+  transform: scale(1.05); /* Destaque principal */
+  border-color: rgba(0, 184, 178, 0.4);
+  background: 
+    radial-gradient(circle at center, rgba(0, 184, 178, 0.12), transparent 80%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 0 60px -15px rgba(0, 184, 178, 0.2);
+  z-index: 5;
+}
+
+.banner-hayia::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 2px 2px, rgba(0, 184, 178, 0.1) 1px, transparent 0);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(to bottom, black, transparent);
+  opacity: 0.3;
+}
+
+.banner-credit {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.04), transparent 70%);
+}
+
+/* Micro-interações */
+.promo-banner:hover {
+  transform: translateY(-12px);
+}
+
+.banner-hayia:hover {
+  transform: scale(1.07) translateY(-12px);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 40px 80px -20px rgba(0, 184, 178, 0.4);
+}
+
+.banner-anuncie:hover { border-color: rgba(0, 184, 178, 0.4); }
+.banner-credit:hover { border-color: rgba(255, 255, 255, 0.3); }
+
+.promo-banner .banner-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 32px;
+  color: var(--accent-cyan);
+  filter: drop-shadow(0 0 10px rgba(0, 184, 178, 0.3));
+}
+
+.promo-banner h3 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.promo-banner p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.promo-banner .bullet-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 48px 0;
+  flex-grow: 1;
+}
+
+.promo-banner .bullet-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Refinamento dos Botões */
+.btn-banner {
+  width: 100%;
+  padding: 18px 24px;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 15px;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+}
+
+.banner-anuncie .btn-banner:hover {
+  background: var(--accent-cyan);
+  color: #000;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 10px 25px -5px rgba(0, 184, 178, 0.4);
+}
+
+.banner-hayia .btn-banner {
+  background: var(--accent-cyan);
+  color: #000;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 8px 20px -5px rgba(0, 184, 178, 0.3);
+}
+
+.banner-hayia .btn-banner:hover {
+  transform: scale(1.02);
+  box-shadow: 0 15px 35px -5px rgba(0, 184, 178, 0.5);
+}
+
+.banner-credit .btn-banner:hover {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+  box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.2);
+}
+
+/* Botões */
+.btn-premium {
+  padding: 20px 32px;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.btn-accent {
+  background: var(--accent-cyan);
+  color: #000;
+  box-shadow: 0 10px 30px -10px oklch(75% .18 190 / 40%);
+}
+
+.btn-accent:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px -10px oklch(75% .18 190 / 60%);
+}
+
+.btn-base {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.btn-banner {
+  margin-top: auto;
+  padding: 14px 28px;
+  border-radius: 12px;
+}
+
+/* Responsive Customization */
+@media (max-width: 1024px) {
+  :root {
+    --section-padding: 80px;
+  }
+  .pricing-grid,
+  .workflow-grid,
+  .promo-banners-grid {
+    grid-template-columns: 1fr;
+    max-width: 500px;
+    margin-inline: auto;
+  }
+  .hero-title {
+    font-size: 3rem;
+  }
+}

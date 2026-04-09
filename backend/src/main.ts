@@ -1,27 +1,17 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
+  const port = Number(process.env.PORT || 3000);
+  
+  app.enableCors(); // Opcional: especificar origens se necessário EX: { origin: 'http://localhost:3001' }
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  await app.listen(port, '0.0.0.0');
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`FINANHUB Backend Gateway is running on port ${port}`);
+  console.log('🚀 SERVER STARTED');
+  console.log('PORT:', port);
 }
 
 bootstrap();

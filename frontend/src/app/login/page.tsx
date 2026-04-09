@@ -17,6 +17,7 @@ function LoginLogic() {
   const [loading, setLoading] = useState(false);
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const resetSuccess = searchParams.get('reset') === 'success';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +25,7 @@ function LoginLogic() {
     setError('');
 
     try {
-      await login(email, password);
+      await login({ email, password });
       // Redireciona o usuário perfeitamente de volta pro ponto de interrupção (Vitrine)
       router.push(callbackUrl);
     } catch {
@@ -36,6 +37,11 @@ function LoginLogic() {
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
+      {resetSuccess && (
+        <div className="p-3 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
+          Senha redefinida com sucesso. Faça login para continuar.
+        </div>
+      )}
       {error && <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">{error}</div>}
       
       <div>
@@ -61,6 +67,12 @@ function LoginLogic() {
         />
       </div>
       
+      <div className="flex justify-end">
+        <Link href="/forgot-password" className="text-xs text-slate-400 hover:text-blue-400">
+          Esqueci minha senha
+        </Link>
+      </div>
+
       <button type="submit" disabled={loading} className="w-full btn-primary mt-2">
         {loading ? 'Acessando...' : 'Entrar na Plataforma'}
       </button>

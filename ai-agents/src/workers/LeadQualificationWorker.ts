@@ -17,6 +17,12 @@ const AI_TEMPERATURE = parseFloat(process.env.OPENAI_TEMPERATURE || '0.3');
 const AI_TIMEOUT_MS = parseInt(process.env.OPENAI_TIMEOUT_MS || '30000', 10);
 const AI_MAX_RETRIES = parseInt(process.env.OPENAI_MAX_RETRIES || '3', 10);
 
+/** Remove markdown code fences before parsing — GPT often wraps JSON in ```json ... ``` */
+function parseAiJson(raw: string): any {
+  const cleaned = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+  return JSON.parse(cleaned);
+}
+
 export const createLeadQualificationWorker = () => {
   const worker = new Worker('ai-lead-qualification', async (job: Job) => {
     const { leadId, tenantId } = job.data;
@@ -104,10 +110,10 @@ MENSAGEM DO INVESTIDOR: "${lead.message}"`,
         temperature: AI_TEMPERATURE,
       }, { timeout: AI_TIMEOUT_MS });
 
-      const rawJson = aiResponse.choices[0].message.content?.trim();
+      const rawJson = aiResponse.choices[0].message.content?.trim() ?? '';
       console.log(`[LeadQualify] Resposta bruta: ${rawJson}`);
 
-      const result = JSON.parse(
+      const result = parseAiJson(
         rawJson || '{"score":0,"classification":"UNQUALIFIED","intentLevel":"LOW","reasonSummary":"Falha de parse","recommendedAction":"Revisar manualmente"}',
       );
 

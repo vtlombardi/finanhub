@@ -12,84 +12,155 @@ const connection = {
   port: parseInt(process.env.REDIS_PORT || '6379', 10),
 };
 
-// Variáveis Genéricas Configuráveis de IA
 const AI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const AI_TEMPERATURE = parseFloat(process.env.OPENAI_TEMPERATURE || '0.2');
 const AI_MAX_RETRIES = parseInt(process.env.OPENAI_MAX_RETRIES || '3', 10);
-const AI_TIMEOUT_MS = parseInt(process.env.OPENAI_TIMEOUT_MS || '30000', 10);
+const AI_TIMEOUT_MS = parseInt(process.env.OPENAI_TIMEOUT_MS || '20000', 10);
+
+/** Extrai JSON de uma string que pode vir com markdown ```json ... ``` */
+function parseAiJson(raw: string): any {
+  const cleaned = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+  return JSON.parse(cleaned);
+}
 
 export const createAdReviewWorker = () => {
-  const worker = new Worker('ai-review', async (job: Job) => {
-    const { listingId, tenantId } = job.data;
-    console.log(`\n[IA-Worker] Processando Job ${job.id} para Listing: ${listingId}`);
+  const worker = new Worker(
+    'ai-review',
+    async (job: Job) => {
+      const { listingId, tenantId } = job.data;
+      console.log(`\n[AdReview] Job ${job.id} — Listing: ${listingId}`);
 
-    const listing = await prisma.listing.findUnique({
-      where: { id: listingId }
-    });
+      const listing = await prisma.listing.findUnique({ where: { id: listingId } });
 
-    if (!listing) {
-      throw new Error(`Listing ${listingId} não encontrada. Job dropado.`);
-    }
+      if (!listing) throw new Error(`Listing ${listingId} não encontrada. Job dropado.`);
 
-    if (listing.status !== 'PENDING_AI_REVIEW') {
-      console.log(`[IA-Worker] Listing ${listingId} já avaliada (${listing.status}). Ignorando.`);
-      return { skipped: true };
-    }
+      if (listing.status !== 'PENDING_AI_REVIEW') {
+        console.log(`[AdReview] Listing já avaliada (${listing.status}). Ignorando.`);
+        return { skipped: true };
+      }
 
-    try {
-      console.log(`[IA-Worker] Avaliando via ${AI_MODEL}...`);
-      const aiResponse = await openai.chat.completions.create({
-        model: AI_MODEL,
-        messages: [
-          {
-            role: "system",
-            content: `Você é o Auditor M&A da Finanhub. Analise os anúncios de listagem de empresas. 
-            Regras de Reprovação (FLAGGED): Se houver palavras obscenas, promessas irrealistas ("Lucro Garantido Absurdo") ou descrições sem nexo.
-            Regras de Aprovação (ACTIVE): Se for um sumário executivo razoável, descritivo, limpo.
-            
-            Você DEVE responder exclusivamente com um JSON limpo, sem markdown, contendo:
-            {"status": "ACTIVE" | "FLAGGED", "reason": "Justificativa breve de 1 frase."}`
+      // Auditoria: cria AiJob
+      const traceId = `ad-review-${listingId}-${Date.now()}`;
+      const aiJob = await prisma.aiJob.create({
+        data: {
+          tenantId,
+          traceId,
+          jobName: 'REVIEW_AD',
+          status: 'PROCESSING',
+          payload: {
+            listingId,
+            title: listing.title,
+            price: listing.price?.toString(),
           },
-          {
-            role: "user",
-            content: `Título do Anúncio: ${listing.title}\nPreço Base: R$ ${listing.price}\nDescrição: ${listing.description}`
-          }
-        ],
-        temperature: AI_TEMPERATURE
-      }, { timeout: AI_TIMEOUT_MS });
-
-      const rawJson = aiResponse.choices[0].message.content?.trim();
-      const payload = JSON.parse(rawJson || '{"status": "FLAGGED", "reason": "Falha de Parse na Resposta LLM"}');
-      
-      console.log(`[IA-Worker] Veredicto recebido: ${payload.status}`);
-      await prisma.listing.update({
-        where: { id: listingId },
-        data: { 
-          status: payload.status === 'ACTIVE' ? 'ACTIVE' : 'FLAGGED',
-        }
+        },
       });
 
-      console.log(`[IA-Worker] Banco atualizado com Sucesso para ${listingId}.`);
-      return { status: payload.status, success: true };
+      try {
+        console.log(`[AdReview] Avaliando via ${AI_MODEL}...`);
 
-    } catch (e: any) {
-       console.error(`[IA-Worker] Falha na integração OpenAI:`, e.message);
+        const aiResponse = await openai.chat.completions.create(
+          {
+            model: AI_MODEL,
+            temperature: AI_TEMPERATURE,
+            messages: [
+              {
+                role: 'system',
+                content: `Você é o Auditor M&A da Finanhub. Avalie anúncios de venda de empresas.
 
-       // Se estourar a cota de tentativa de re-connects limpos do próprio job, persistimos a Falha no DB pra o lojista não ficar cego
-       if (job.attemptsMade >= AI_MAX_RETRIES - 1) {
-          console.log(`[IA-Worker] Última tentativa estourada. Escrevendo FLAGGED_ERROR_AI no BD.`);
+Regras de REPROVAÇÃO (FLAGGED):
+- Palavras obscenas ou ofensivas
+- Promessas financeiras absurdas ou irrealistas ("Lucro garantido", "Retorno de 1000%")
+- Descrição sem nexo, vazia ou claramente falsa
+- Indícios de golpe ou fraude (urgência extrema, pedir dados sensíveis)
+
+Regras de APROVAÇÃO (ACTIVE):
+- Sumário executivo razoável e descritivo
+- Informações financeiras plausíveis
+- Texto limpo, profissional ou neutro
+
+Responda EXCLUSIVAMENTE com JSON limpo (sem markdown):
+{
+  "status": "ACTIVE" | "FLAGGED",
+  "reason": "<justificativa em 1 frase>",
+  "recommendedTitle": "<sugestão de título melhorado ou null>",
+  "flags": ["<tag1>", "<tag2>"],
+  "scamProbability": <0.0 a 1.0>
+}`,
+              },
+              {
+                role: 'user',
+                content: `Título: ${listing.title}\nPreço: R$ ${listing.price ?? 'não informado'}\nDescrição: ${listing.description ?? 'não informada'}`,
+              },
+            ],
+          },
+          { timeout: AI_TIMEOUT_MS },
+        );
+
+        const rawJson = aiResponse.choices[0].message.content?.trim() ?? '';
+        console.log(`[AdReview] Resposta bruta: ${rawJson}`);
+
+        const payload = parseAiJson(rawJson);
+        const newStatus = payload.status === 'ACTIVE' ? 'ACTIVE' : 'FLAGGED';
+
+        // Atualiza status do listing
+        await prisma.listing.update({
+          where: { id: listingId },
+          data: { status: newStatus },
+        });
+
+        // Persiste insight para o painel de moderação
+        await prisma.aiInsight.create({
+          data: {
+            listingId,
+            scamProbability: payload.scamProbability ?? 0,
+            recommendedTitle: payload.recommendedTitle ?? null,
+            flags: payload.flags ?? [],
+          },
+        });
+
+        // Fecha AiJob como COMPLETED
+        await prisma.aiJob.update({
+          where: { id: aiJob.id },
+          data: {
+            status: 'COMPLETED',
+            result: payload,
+            completedAt: new Date(),
+          },
+        });
+
+        console.log(`[AdReview] ✅ Listing ${listingId} → ${newStatus} (scam: ${payload.scamProbability})`);
+        return { status: newStatus, success: true };
+
+      } catch (e: any) {
+        console.error(`[AdReview] ❌ Falha:`, e.message);
+
+        await prisma.aiJob.update({
+          where: { id: aiJob.id },
+          data: { status: 'FAILED', error: e.message, completedAt: new Date() },
+        });
+
+        if (job.attemptsMade >= AI_MAX_RETRIES - 1) {
+          console.log(`[AdReview] Última tentativa. Marcando como FLAGGED.`);
           await prisma.listing.update({
-             where: { id: listingId },
-             data: { status: 'FLAGGED' } // Ou um status como 'ERROR' a depender do engessamento enum, usamos FLAGGED pra congelar
+            where: { id: listingId },
+            data: { status: 'FLAGGED' },
           });
-       }
+        }
 
-       throw e; 
-    }
-  }, { connection });
+        throw e;
+      }
+    },
+    { connection, concurrency: 2 },
+  );
 
   worker.on('failed', (job, err) => {
-    console.error(`[IA-Worker] Job ${job?.id} falhou decisivamente: ${err.message}`);
+    console.error(`[AdReview] Job ${job?.id} falhou decisivamente: ${err.message}`);
+  });
+
+  worker.on('completed', (job, result) => {
+    if (!result?.skipped) {
+      console.log(`[AdReview] Job ${job?.id} concluído: ${result?.status}`);
+    }
   });
 
   return worker;

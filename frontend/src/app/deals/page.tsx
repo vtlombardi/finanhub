@@ -1,19 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { PublicHeader } from "@/components/layout/PublicHeader";
-import { ListingsService, SearchFilters } from '@/features/listings/listings.service';
+import { useListings } from '@/hooks/useListings';
+import { ListingsService } from '@/services/ListingsService';
 import Link from 'next/link';
-import { Briefcase, Search, Heart, SlidersHorizontal, ChevronLeft, ChevronRight, ArrowUpDown, X } from 'lucide-react';
+import { 
+  Briefcase, 
+  Search, 
+  Heart, 
+  SlidersHorizontal, 
+  ChevronLeft, 
+  ChevronRight, 
+  ArrowUpDown, 
+  X,
+  MapPin,
+  TrendingUp,
+  Tag,
+  DollarSign
+} from 'lucide-react';
+
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+// ─── Constants ──────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
   { slug: 'tech', name: 'Tecnologia' },
@@ -21,6 +31,12 @@ const CATEGORIES = [
   { slug: 'retail', name: 'Varejo' },
   { slug: 'services', name: 'Serviços' },
   { slug: 'finance', name: 'Finanças' },
+  { slug: 'agrobusiness', name: 'Agronegócio' },
+  { slug: 'health', name: 'Saúde' },
+];
+
+const STATES = [
+  'SP', 'RJ', 'MG', 'PR', 'SC', 'RS', 'GO', 'DF', 'PE', 'CE', 'BA', 'AM'
 ];
 
 const SORT_OPTIONS = [
@@ -30,243 +46,288 @@ const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Maior preço' },
 ];
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function DealsShowcasePage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [deals, setDeals] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-
-  // Filters state
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
-  const [currentPage, setCurrentPage] = useState(1);
-
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  
+  const [showFilters, setShowFilters] = useState(false);
+  const { 
+    listings, 
+    pagination, 
+    loading, 
+    filters, 
+    updateFilters, 
+    clearFilters, 
+    setPage,
+    refresh
+  } = useListings({ limit: 12, sort: 'newest' });
 
-  const fetchDeals = async (page = 1) => {
-    setLoading(true);
-    const filters: SearchFilters = { page, limit: 12, sort: sortBy };
-    if (query) filters.q = query;
-    if (category) filters.category = category;
-    if (minPrice) filters.minPrice = parseFloat(minPrice);
-    if (maxPrice) filters.maxPrice = parseFloat(maxPrice);
-
-    try {
-      const result = await ListingsService.getPublicListings(filters);
-      setDeals(result.data || []);
-      setPagination(result.pagination || null);
-      setCurrentPage(page);
-    } catch {
-      setDeals([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDeals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchDeals(1);
-  };
-
-  const clearFilters = () => {
-    setQuery('');
-    setCategory('');
-    setMinPrice('');
-    setMaxPrice('');
-    setSortBy('newest');
-    setTimeout(() => fetchDeals(1), 0);
+    refresh();
   };
 
   const handleFavorite = async (e: React.MouseEvent, listingId: string) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      router.push('/login?callbackUrl=/deals');
+      router.push(`/login?callbackUrl=/deals`);
       return;
     }
     try {
       const res = await ListingsService.toggleFavorite(listingId);
+      // Aqui poderíamos usar um toast, mas manteremos o padrão para consistência
       alert(res.favorited ? 'Adicionado aos favoritos!' : 'Removido dos favoritos.');
+      refresh();
     } catch {
       alert('Falha ao atualizar favorito.');
     }
   };
 
-  const hasActiveFilters = category || minPrice || maxPrice || sortBy !== 'newest';
+  const hasActiveFilters = filters.category || filters.minPrice || filters.maxPrice || filters.state || filters.sort !== 'newest';
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-[#0f172a] text-slate-100 pb-20">
+    <main className="min-h-screen bg-[#020617] text-slate-100 pb-20">
       <PublicHeader />
 
-      <div className="pt-32 pb-12 bg-slate-900 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-100 to-slate-400">
+      {/* Hero / Header */}
+      <div className="pt-32 pb-16 bg-[#020617] border-b border-white/[0.03] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
+            <TrendingUp size={14} className="text-blue-400" />
+            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Marketplace Middle-Market</span>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-500 leading-tight">
             Oportunidades de M&A
           </h1>
-          <p className="text-slate-400 mt-3 text-lg max-w-2xl">
-            {pagination ? `${pagination.total} deals disponíveis` : 'Descubra transações no middle-market auditadas.'}
+          <p className="text-slate-500 mt-4 text-lg max-w-2xl font-medium">
+            Explore ativos auditados e oportunidades diretas de investimento e aquisição. 
+            {pagination && <span className="text-slate-400"> Atualmente {pagination.total} empresas conectadas.</span>}
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Search + Filter Bar */}
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Busque por setor, nome ou modelo de negócio..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="w-full bg-[#1e293b]/50 border border-slate-700/50 rounded-xl py-3 pl-12 pr-4 text-slate-200 placeholder-slate-500 outline-none focus:border-blue-500/50 transition-colors"
-              />
-            </div>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-6 py-3 font-medium transition shadow-lg shadow-blue-500/20 flex-shrink-0">
-              Buscar
-            </button>
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        
+        {/* Search & Main Filter Controls */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <form onSubmit={handleSearch} className="flex-1 relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-blue-500 transition-colors" />
+            <input
+              type="text"
+              placeholder="Setor, modelo de negócio ou região..."
+              value={filters.q || ''}
+              onChange={(e) => updateFilters({ q: e.target.value })}
+              className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-slate-200 placeholder-slate-600 outline-none focus:border-blue-500/40 focus:ring-4 focus:ring-blue-500/5 transition-all"
+            />
+          </form>
+
+          <div className="flex gap-2">
             <button
-              type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className={`rounded-xl px-4 py-3 border transition flex items-center gap-2 flex-shrink-0 ${showFilters ? 'bg-blue-600/20 border-blue-500/50 text-blue-400' : 'border-slate-700 text-slate-400 hover:bg-slate-800'}`}
+              className={`rounded-2xl px-6 py-4 border transition-all flex items-center gap-2 font-semibold text-sm ${
+                showFilters 
+                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' 
+                : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
             >
               <SlidersHorizontal size={18} />
-              <span className="hidden sm:inline">Filtros</span>
-              {hasActiveFilters && <span className="h-2 w-2 rounded-full bg-blue-500"></span>}
+              Filtros
+              {hasActiveFilters && <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}
+            </button>
+            <button 
+              onClick={refresh}
+              className="bg-blue-600 hover:bg-blue-500 text-white rounded-2xl px-8 py-4 font-bold text-sm transition-all shadow-xl shadow-blue-600/10 active:scale-95"
+            >
+              Atualizar
             </button>
           </div>
-        </form>
+        </div>
 
-        {/* Expanded Filters */}
+        {/* Expanded Filters Panel */}
         {showFilters && (
-          <div className="glass-panel rounded-xl p-6 mb-6 animate-in slide-in-from-top-2 duration-200">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Categoria */}
-              <div>
-                <label className="text-xs text-slate-400 font-medium mb-1.5 block">Categoria</label>
+          <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-8 mb-10 animate-in slide-in-from-top-4 duration-300">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              
+              {/* Category */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                  <Tag size={12} /> Categoria
+                </label>
                 <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-blue-500/50"
+                  value={filters.category || ''}
+                  onChange={(e) => updateFilters({ category: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 outline-none focus:border-blue-500/40 appearance-none cursor-pointer"
                 >
-                  <option value="">Todas</option>
+                  <option value="">Todas as Categorias</option>
                   {CATEGORIES.map((c) => (
                     <option key={c.slug} value={c.slug}>{c.name}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Preço Mínimo */}
-              <div>
-                <label className="text-xs text-slate-400 font-medium mb-1.5 block">Preço Mínimo (R$)</label>
-                <input
-                  type="number"
-                  value={minPrice}
-                  onChange={(e) => setMinPrice(e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-blue-500/50 font-mono"
-                />
+              {/* Price Range */}
+              <div className="space-y-3 sm:col-span-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                  <DollarSign size={12} /> Faixa de Valuation (R$)
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    value={filters.minPrice || ''}
+                    onChange={(e) => updateFilters({ minPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    placeholder="Mínimo"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 outline-none focus:border-blue-500/40 font-mono"
+                  />
+                  <div className="w-4 h-px bg-slate-800 shrink-0" />
+                  <input
+                    type="number"
+                    value={filters.maxPrice || ''}
+                    onChange={(e) => updateFilters({ maxPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    placeholder="Máximo"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 outline-none focus:border-blue-500/40 font-mono"
+                  />
+                </div>
               </div>
 
-              {/* Preço Máximo */}
-              <div>
-                <label className="text-xs text-slate-400 font-medium mb-1.5 block">Preço Máximo (R$)</label>
-                <input
-                  type="number"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  placeholder="∞"
-                  className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-blue-500/50 font-mono"
-                />
-              </div>
-
-              {/* Ordenação */}
-              <div>
-                <label className="text-xs text-slate-400 font-medium mb-1.5 block flex items-center gap-1">
-                  <ArrowUpDown size={12} /> Ordenar por
+              {/* State & Sort */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                  <MapPin size={12} /> Região / UF
                 </label>
                 <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-blue-500/50"
+                  value={filters.state || ''}
+                  onChange={(e) => updateFilters({ state: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 outline-none focus:border-blue-500/40 appearance-none cursor-pointer"
                 >
-                  {SORT_OPTIONS.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
+                  <option value="">Brasil (Todos)</option>
+                  {STATES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-800">
-              <button onClick={clearFilters} className="text-sm text-slate-500 hover:text-slate-300 flex items-center gap-1 transition">
-                <X size={14} /> Limpar filtros
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-800/50">
+              <button 
+                onClick={clearFilters} 
+                className="text-xs font-bold text-slate-500 hover:text-slate-300 flex items-center gap-2 transition uppercase tracking-tighter"
+              >
+                <X size={14} /> Limpar tudo
               </button>
-              <button onClick={() => fetchDeals(1)} className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition">
-                Aplicar Filtros
-              </button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase">Ordenar:</span>
+                  <select
+                    value={filters.sort || 'newest'}
+                    onChange={(e) => updateFilters({ sort: e.target.value as any })}
+                    className="bg-transparent text-xs font-bold text-slate-400 outline-none cursor-pointer hover:text-white transition"
+                  >
+                    {SORT_OPTIONS.map((s) => (
+                      <option key={s.value} value={s.value} className="bg-slate-900">{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <button 
+                   onClick={() => { setShowFilters(false); refresh(); }} 
+                   className="text-xs font-bold bg-white text-black px-6 py-3 rounded-xl hover:bg-slate-200 transition active:scale-95"
+                >
+                  Aplicar Filtros
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {/* Results Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="glass-panel h-64 rounded-xl animate-pulse bg-slate-800/50" />
+              <div key={i} className="bg-slate-900/50 border border-slate-800 h-80 rounded-3xl animate-pulse" />
             ))}
+          </div>
+        ) : listings.length === 0 ? (
+          <div className="py-32 text-center">
+            <div className="w-20 h-20 bg-slate-900 border border-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Search className="w-8 h-8 text-slate-700" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Nenhum deal encontrado</h3>
+            <p className="text-slate-500 max-w-sm mx-auto">Tente ajustar seus filtros ou termos de busca para encontrar novas oportunidades.</p>
+            <button onClick={clearFilters} className="mt-6 text-blue-500 font-bold hover:text-blue-400">Ver todas as oportunidades</button>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {deals.map((deal) => (
-                <Link href={`/deals/${deal.slug || deal.id}`} key={deal.id} className="group cursor-pointer">
-                  <div className={`glass-panel rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col relative ${deal.isFeatured ? 'border-amber-500/30 hover:border-amber-500/50 hover:shadow-amber-500/10 ring-1 ring-amber-500/10' : 'hover:border-blue-500/50 hover:shadow-blue-500/10'}`}>
-                    <div className={`h-2 bg-gradient-to-r ${deal.isFeatured ? 'from-amber-500 to-orange-500' : 'from-blue-600 to-indigo-500'}`}></div>
-                    <div className="p-6 flex-1 flex flex-col">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-xs font-medium text-slate-300 border border-slate-700">
-                            <Briefcase size={12} /> {deal.category?.name || 'Mercado Geral'}
-                          </span>
-                          {deal.isFeatured && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold border border-amber-500/20">
-                              ★ Destaque
-                            </span>
-                          )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {listings.map((deal) => (
+                <Link href={`/deals/${deal.slug || deal.id}`} key={deal.id} className="group flex">
+                  <div className={`bg-slate-900/40 border border-slate-800/80 rounded-[32px] overflow-hidden hover:border-blue-500/30 transition-all duration-500 flex flex-col relative w-full ${
+                    deal.isFeatured ? 'ring-1 ring-amber-500/20 bg-amber-500/[0.02]' : ''
+                  }`}>
+                    
+                    {/* Visual indicators */}
+                    <div className="absolute top-0 right-0 p-6 z-10">
+                       {deal.isFeatured && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full backdrop-blur-md">
+                          Premium Choice
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-8 flex-1 flex flex-col">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2">
+                           <div className="w-8 h-8 rounded-lg bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-400">
+                              <Briefcase size={14} />
+                           </div>
+                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                             {deal.category?.name || 'Mercado Geral'}
+                           </span>
                         </div>
                         <button
                           onClick={(e) => handleFavorite(e, deal.id)}
-                          className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-400 hover:text-rose-400 border border-slate-700 hover:bg-slate-700 transition pointer-events-auto"
-                          title="Favoritar"
+                          className="h-10 w-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:border-rose-500/30 transition-all z-20 group/fav"
                         >
-                          <Heart size={14} />
+                          <Heart size={16} className="group-active/fav:scale-125 transition-transform" />
                         </button>
                       </div>
-                      <h3 className="text-lg font-semibold text-slate-100 mb-2 group-hover:text-blue-400 transition-colors line-clamp-2">
+
+                      <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors line-clamp-2 leading-tight">
                         {deal.title}
                       </h3>
-                      {deal.description && (
-                        <p className="text-sm text-slate-500 line-clamp-2 mb-4">{deal.description}</p>
-                      )}
-                      <div className="mt-auto pt-4 flex items-end justify-between border-t border-slate-700/30">
-                        <div>
-                          <p className="text-xs text-slate-500 font-medium mb-1">VALUATION ALVO</p>
-                          <p className="font-mono text-lg font-semibold text-slate-200">
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(Number(deal.price || 0))}
-                          </p>
+                      
+                      <p className="text-sm text-slate-500 line-clamp-3 mb-8 leading-relaxed font-medium">
+                        {deal.description}
+                      </p>
+
+                      <div className="mt-auto flex flex-col gap-4">
+                        <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">
+                           <div className="flex items-center gap-2">
+                             <MapPin size={12} className="text-slate-700" />
+                             {deal.state || 'BR'}
+                           </div>
+                           <div className="w-1 h-1 rounded-full bg-slate-800" />
+                           <div className="flex items-center gap-2">
+                             <Tag size={12} className="text-slate-700" />
+                             M&A Deal
+                           </div>
                         </div>
-                        <div className="bg-blue-600 text-white h-8 w-8 rounded-lg flex items-center justify-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14m-7-7 7 7-7 7" /></svg>
+
+                        <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+                          <div>
+                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1.5">Valuation Alvo</p>
+                            <p className="font-mono text-2xl font-bold text-white tracking-tighter">
+                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(Number(deal.price || 0))}
+                            </p>
+                          </div>
+                          <div className="bg-white text-black h-12 w-12 rounded-2xl flex items-center justify-center opacity-0 scale-90 -translate-x-4 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 transition-all duration-300 shadow-2xl shadow-white/10">
+                            <ChevronRight size={22} strokeWidth={3} />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -275,49 +336,44 @@ export default function DealsShowcasePage() {
               ))}
             </div>
 
-            {deals.length === 0 && (
-              <div className="py-20 text-center text-slate-500">
-                Nenhum deal encontrado com os filtros selecionados.
-              </div>
-            )}
-
-            {/* Pagination */}
+            {/* Pagination Controls */}
             {pagination && pagination.totalPages > 1 && (
-              <div className="flex items-center justify-center gap-4 mt-10">
+              <div className="flex items-center justify-center gap-3 mt-20">
                 <button
-                  onClick={() => fetchDeals(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                  className="p-2 rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                  onClick={() => setPage(filters.page ? filters.page - 1 : 1)}
+                  disabled={filters.page === 1 || !filters.page}
+                  className="w-12 h-12 rounded-2xl border border-slate-800 bg-slate-900/50 flex items-center justify-center text-slate-400 hover:bg-slate-800 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(pagination.totalPages, 7) }, (_, i) => {
+                
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: pagination.totalPages }, (_, i) => {
                     const p = i + 1;
+                    const isActive = p === (filters.page || 1);
                     return (
                       <button
                         key={p}
-                        onClick={() => fetchDeals(p)}
-                        className={`h-9 w-9 rounded-lg text-sm font-medium transition ${p === currentPage ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+                        onClick={() => setPage(p)}
+                        className={`h-12 w-12 rounded-2xl text-xs font-bold transition-all ${
+                          isActive 
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
+                          : 'text-slate-500 hover:bg-slate-800 hover:text-white'
+                        }`}
                       >
                         {p}
                       </button>
                     );
                   })}
-                  {pagination.totalPages > 7 && (
-                    <span className="text-slate-500 px-2">...</span>
-                  )}
                 </div>
+
                 <button
-                  onClick={() => fetchDeals(currentPage + 1)}
-                  disabled={currentPage >= pagination.totalPages}
-                  className="p-2 rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                  onClick={() => setPage(filters.page ? filters.page + 1 : 2)}
+                  disabled={filters.page === pagination.totalPages}
+                  className="w-12 h-12 rounded-2xl border border-slate-800 bg-slate-900/50 flex items-center justify-center text-slate-400 hover:bg-slate-800 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
                 >
                   <ChevronRight size={20} />
                 </button>
-                <span className="text-xs text-slate-500 ml-2">
-                  {pagination.total} resultado{pagination.total !== 1 ? 's' : ''}
-                </span>
               </div>
             )}
           </>

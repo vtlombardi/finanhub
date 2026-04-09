@@ -20,7 +20,7 @@ export function PublicHeader() {
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
            <Link href="/deals" className="hover:text-blue-400 transition-colors">Portfólio de Ativos</Link>
-           <Link href="/pricing" className="hover:text-blue-400 transition-colors">Planos</Link>
+           <Link href="/anuncie" className="hover:text-blue-400 transition-colors">Planos</Link>
            <Link href="/about" className="hover:text-blue-400 transition-colors">Sobre Nós</Link>
         </nav>
 

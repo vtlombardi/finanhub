@@ -66,41 +66,46 @@ export class AnalyticsService {
   }
 
   private async getTrends(tenantId: string) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const [metrics, leads] = await Promise.all([
+      this.prisma.metric.findMany({
+        where: { tenantId, type: 'VIEW', createdAt: { gte: sevenDaysAgo } },
+        select: { createdAt: true, value: true },
+      }),
+      this.prisma.lead.findMany({
+        where: { tenantId, createdAt: { gte: sevenDaysAgo } },
+        select: { createdAt: true },
+      }),
+    ]);
+
     const dates = Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
-      d.setDate(d.getDate() - i);
+      d.setDate(d.getDate() - (6 - i));
       return d.toISOString().split('T')[0];
-    }).reverse();
+    });
 
-    const stats = await Promise.all(
-      dates.map(async (dateStr) => {
-        const startOfDay = new Date(dateStr);
-        const endOfDay = new Date(dateStr);
-        endOfDay.setHours(23, 59, 59, 999);
+    const viewsByDay = new Map<string, number>();
+    const leadsByDay = new Map<string, number>();
+    dates.forEach((d) => { viewsByDay.set(d, 0); leadsByDay.set(d, 0); });
 
-        const [views, leads] = await Promise.all([
-          this.prisma.metric.aggregate({
-            where: {
-              tenantId,
-              type: 'VIEW',
-              createdAt: { gte: startOfDay, lte: endOfDay },
-            },
-            _sum: { value: true },
-          }),
-          this.prisma.lead.count({
-            where: { tenantId, createdAt: { gte: startOfDay, lte: endOfDay } },
-          }),
-        ]);
+    metrics.forEach((m) => {
+      const day = m.createdAt.toISOString().split('T')[0];
+      viewsByDay.set(day, (viewsByDay.get(day) ?? 0) + m.value);
+    });
 
-        return {
-          date: dateStr,
-          views: views._sum.value || 0,
-          leads,
-        };
-      }),
-    );
+    leads.forEach((l) => {
+      const day = l.createdAt.toISOString().split('T')[0];
+      leadsByDay.set(day, (leadsByDay.get(day) ?? 0) + 1);
+    });
 
-    return stats;
+    return dates.map((date) => ({
+      date,
+      views: viewsByDay.get(date) ?? 0,
+      leads: leadsByDay.get(date) ?? 0,
+    }));
   }
 
   async exportLeadsToCsv(tenantId: string) {

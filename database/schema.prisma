@@ -7,9 +7,499 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =========================================================================
-// ENUMS GLOBAIS
-// =========================================================================
+model Tenant {
+  id            String              @id @default(uuid())
+  slug          String              @unique
+  name          String
+  document      String?             @unique
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  ads              Ad[]
+  aiJobs           AiJob[]
+  auditLogs        AuditLog[]
+  categories       Category[]
+  categoryAttrs    CategoryAttribute[]
+  chatThreads      ChatThread[]
+  companies        Company[]
+  dailyMetrics     DailyMetric[]
+  dataRoomDocs     DataRoomDocument[]
+  dataRoomRequests DataRoomRequest[]
+  leads            Lead[]
+  listings         Listing[]
+  metrics          Metric[]
+  plans            Plan[]
+  subscriptions    Subscription[]
+  users            User[]
+
+  @@index([slug])
+}
+
+model User {
+  id                      String             @id @default(uuid())
+  tenantId                String
+  email                   String
+  passwordHash            String
+  fullName                String
+  role                    Role               @default(USER)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  isEmailVerified         Boolean            @default(false)
+  verificationCode        String?
+  verificationCodeExpires DateTime?
+  resetPasswordCode       String?
+  resetPasswordExpires    DateTime?
+  auditLogs               AuditLog[]
+  chatMessages            ChatMessage[]
+  chatParticipants        ChatParticipant[]
+  companyMembers          CompanyMember[]
+  favorites               Favorite[]
+  leads                   Lead[]
+  listings                Listing[]
+  dataRoomRequests        DataRoomRequest[]
+  moderationActions       ModerationAction[] @relation("moderationActions")
+  notifications           Notification[]
+  proposals               Proposal[]
+  tenant                  Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+}
+
+model Company {
+  id         String          @id @default(uuid())
+  tenantId   String
+  slug       String
+  name       String
+  tradeName  String?
+  document   String?
+  isVerified Boolean         @default(false)
+  
+  // Reputação e Índices (Métricas de Confiança)
+  trustScore        Decimal?        @db.Decimal(3, 1) // ex: 9.8
+  responseRate      Int?            @default(0)       // ex: 92 (porcentagem)
+  responseTime      String?                           // ex: "2h"
+  yearsActive       Int?                              // ex: 8
+  dealsCount        Int?            @default(0)       // ex: 12
+  bio               String?                           // ex: "Investidor focado em Tech..."
+
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members    CompanyMember[]
+  listings   Listing[]
+
+  @@unique([tenantId, slug])
+}
+
+model CompanyMember {
+  id        String   @id @default(uuid())
+  companyId String
+  userId    String
+  role      String   @default("MEMBER")
+  createdAt DateTime @default(now())
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+}
+
+model Category {
+  id          String              @id @default(uuid())
+  tenantId    String
+  slug        String
+  name        String
+  description String?
+  iconClass   String?
+  createdAt   DateTime            @default(now())
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attributes  CategoryAttribute[]
+  listings    Listing[]
+
+  @@unique([tenantId, slug])
+}
+
+model CategoryAttribute {
+  id         String                  @id @default(uuid())
+  tenantId   String
+  categoryId String
+  name       String
+  label      String
+  type       String
+  isRequired Boolean                 @default(false)
+  category   Category                @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tenant     Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  values     ListingAttributeValue[]
+
+  @@unique([categoryId, name])
+}
+
+model Listing {
+  id                String                  @id @default(uuid())
+  tenantId          String
+  companyId         String
+  categoryId        String
+  ownerId           String?
+  owner             User?                   @relation(fields: [ownerId], references: [id])
+  slug              String
+  title             String
+  description       String
+  price             Decimal?                @db.Decimal(15, 2)
+  status            ListingStatus           @default(DRAFT)
+  viewCount         Int                     @default(0)
+  isFeatured        Boolean                 @default(false)
+  featuredUntil     DateTime?
+  featuredPriority  Int                     @default(0)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  addressLine1      String?
+  addressLine2      String?
+  city              String?
+  ebitda            String?
+  email             String?
+  employeesCount    String?
+  facebookUrl       String?
+  instagramUrl      String?
+  investmentValue   Decimal?                @db.Decimal(15, 2)
+  linkedinUrl       String?
+  logoUrl           String?
+  neighborhood      String?
+  phonePrimary      String?
+  phoneSecondary    String?
+  revenue           String?
+  seoDescription    String?
+  seoKeywords       String?
+  seoTitle          String?
+  state             String?
+  tiktokUrl         String?
+  twitterUrl        String?
+  videoDescription  String?
+  videoUrl          String?
+  websiteUrl        String?
+  zipCode           String?
+  addressReference  String?
+  country           String?
+  aiInsights        AiInsight[]
+  businessHours     BusinessHour[]
+  chatThreads       ChatThread[]
+  dataRoomDocs      DataRoomDocument[]
+  dataRoomRequests  DataRoomRequest[]
+  favorites         Favorite[]
+  leads             Lead[]
+  category          Category                @relation(fields: [categoryId], references: [id])
+  company           Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tenant            Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attrValues        ListingAttributeValue[]
+  features          ListingFeature[]
+  media             ListingMedia[]
+  metrics           Metric[]
+  moderationActions ModerationAction[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, status, createdAt])
+  @@index([categoryId, status])
+}
+
+model ListingFeature {
+  id        String   @id @default(uuid())
+  listingId String
+  name      String
+  iconClass String?
+  createdAt DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model BusinessHour {
+  id        String   @id @default(uuid())
+  listingId String
+  dayOfWeek Int
+  openTime  String
+  closeTime String
+  createdAt DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model ListingMedia {
+  id        String   @id @default(uuid())
+  listingId String
+  url       String
+  mediaType String
+  isCover   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model ListingAttributeValue {
+  id          String            @id @default(uuid())
+  listingId   String
+  attributeId String
+  valueStr    String?
+  valueNum    Decimal?          @db.Decimal(15, 2)
+  valueBool   Boolean?
+  attribute   CategoryAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  listing     Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, attributeId])
+}
+
+model Lead {
+  id                  String       @id @default(uuid())
+  tenantId            String
+  listingId           String
+  investorId          String
+  status              LeadStatus   @default(NEW)
+  
+  // Detalhes do Lead (Capturados no form estratégico)
+  userName            String?
+  userEmail           String?
+  userPhone           String?
+  userCompany         String?
+  objective           String?      // ex: "Demonstração de Interesse", "Solicitação de Análise"
+  investmentRange     String?      // ex: "R$ 500k - R$ 2M"
+  message             String
+  mediationAccepted   Boolean      @default(false)
+  
+  score               Int?
+  intentLevel         IntentLevel?
+  aiClassification    String?
+  aiReasonSummary     String?
+  aiRecommendedAction String?
+  aiProcessedAt       DateTime?
+  aiError             String?
+  createdAt           DateTime     @default(now())
+  investor            User         @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  listing             Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  tenant              Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  proposals           Proposal[]
+
+  @@index([tenantId, investorId])
+  @@index([listingId])
+}
+
+enum LeadStatus {
+  NEW
+  UNDER_REVIEW
+  QUALIFIED
+  CONTACTED
+  PROPOSAL_SENT
+  WON
+  LOST
+}
+
+model Proposal {
+  id           String         @id @default(uuid())
+  leadId       String
+  investorId   String
+  valueOffered Decimal        @db.Decimal(15, 2)
+  conditions   String?
+  status       ProposalStatus @default(OPEN)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  investor     User           @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  lead         Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  listingId String
+  userId    String
+  createdAt DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, userId])
+}
+
+model ChatThread {
+  id           String            @id @default(uuid())
+  tenantId     String
+  listingId    String
+  leadId       String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  messages     ChatMessage[]
+  participants ChatParticipant[]
+  listing      Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+}
+
+model ChatParticipant {
+  id       String     @id @default(uuid())
+  threadId String
+  userId   String
+  joinedAt DateTime   @default(now())
+  thread   ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, userId])
+}
+
+model ChatMessage {
+  id        String     @id @default(uuid())
+  threadId  String
+  senderId  String
+  body      String
+  isRead    Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  sender    User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model ModerationAction {
+  id             String   @id @default(uuid())
+  listingId      String
+  moderatorId    String
+  action         String
+  reason         String?
+  previousStatus String?
+  newStatus      String?
+  createdAt      DateTime @default(now())
+  listing        Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  moderator      User     @relation("moderationActions", fields: [moderatorId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+}
+
+model Plan {
+  id                  String         @id @default(uuid())
+  tenantId            String?
+  tier                PlanTier
+  name                String
+  description         String?
+  price               Decimal        @db.Decimal(15, 2)
+  priceYearly         Decimal?       @db.Decimal(15, 2)
+  currency            String         @default("BRL")
+  isPublic            Boolean        @default(true)
+  maxListings         Int            @default(1)
+  maxLeadsPerMonth    Int            @default(10)
+  maxFeaturedListings Int            @default(0)
+  hasAiQualification  Boolean        @default(false)
+  hasChat             Boolean        @default(false)
+  hasPrioritySupport  Boolean        @default(false)
+  hasAnalytics        Boolean        @default(false)
+  hasApiAccess        Boolean        @default(false)
+  hasCustomBranding   Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  tenant              Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptions       Subscription[]
+}
+
+model Subscription {
+  id            String    @id @default(uuid())
+  tenantId      String
+  planId        String
+  startDate     DateTime  @default(now())
+  endDate       DateTime?
+  isActive      Boolean   @default(true)
+  canceledAt    DateTime?
+  cancelReason  String?
+  billingCycle  String    @default("MONTHLY")
+  externalId    String?
+  lastPaymentAt DateTime?
+  nextBillingAt DateTime?
+  creditBalance Decimal   @default(0) @db.Decimal(15, 2)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  plan          Plan      @relation(fields: [planId], references: [id])
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, entityType])
+}
+
+model AiJob {
+  id          String      @id @default(uuid())
+  tenantId    String
+  traceId     String      @unique
+  jobName     String
+  status      AiJobStatus @default(PENDING)
+  payload     Json
+  result      Json?
+  error       String?
+  createdAt   DateTime    @default(now())
+  completedAt DateTime?
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Ad {
+  id        String      @id @default(uuid())
+  tenantId  String?
+  title     String
+  imageUrl  String?
+  linkUrl   String
+  position  AdPosition
+  isActive  Boolean     @default(true)
+  startsAt  DateTime    @default(now())
+  endsAt    DateTime?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  tenant    Tenant?     @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([position, isActive, startsAt])
+}
+
+model AiInsight {
+  id               String   @id @default(uuid())
+  listingId        String
+  scamProbability  Decimal? @db.Decimal(5, 4)
+  recommendedTitle String?
+  flags            String[]
+  createdAt        DateTime @default(now())
+  listing          Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model Metric {
+  id        String   @id @default(uuid())
+  tenantId  String
+  listingId String?
+  type      String
+  value     Float    @default(1.0)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  listing   Listing? @relation(fields: [listingId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, type, createdAt])
+}
+
+model DailyMetric {
+  id        String   @id @default(uuid())
+  tenantId  String
+  date      DateTime @db.Date
+  type      String
+  value     Int      @default(0)
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date, type])
+}
 
 enum Role {
   USER
@@ -36,10 +526,15 @@ enum ProposalStatus {
 }
 
 enum PlanTier {
-  FREE
-  BASIC
-  PRO
-  ENTERPRISE
+  BASE
+  PROFESSIONAL
+  ELITE
+}
+
+enum AdPosition {
+  LEADERBOARD
+  MOBILE_BANNER
+  SIDEBAR
 }
 
 enum AiJobStatus {
@@ -55,469 +550,39 @@ enum IntentLevel {
   HIGH
 }
 
-// =========================================================================
-// FASE 1: NÚCLEO MULTI-TENANT E IDENTIDADE
-// =========================================================================
-
-model Tenant {
-  id       String  @id @default(uuid())
-  slug     String  @unique
-  name     String
-  document String? @unique // CNPJ ou similar raiz da operadora
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relações Diretas (O ambiente propaga a todos)
-  users         User[]
-  companies     Company[]
-  categories    Category[]
-  categoryAttrs CategoryAttribute[]
-  listings      Listing[]
-  plans         Plan[]
-  subscriptions Subscription[]
-  auditLogs     AuditLog[]
-  chatThreads   ChatThread[]
-  aiJobs        AiJob[]
-  metrics       Metric[]
-  dailyMetrics  DailyMetric[]
-
-  @@index([slug])
+enum DataRoomStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
-model User {
-  id           String @id @default(uuid())
-  tenantId     String
-  email        String
-  passwordHash String
-  fullName     String
-  role         Role   @default(USER)
-
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  companyMembers CompanyMember[]
-  leads          Lead[]
-  proposals      Proposal[]
-  favorites      Favorite[]
-  chatMessages   ChatMessage[]
-  chatParticipants ChatParticipant[]
-  notifications  Notification[]
-  moderationActions ModerationAction[] @relation("moderationActions")
-  auditLogs      AuditLog[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([tenantId, email])
-}
-
-model Company {
-  id         String  @id @default(uuid())
-  tenantId   String
-  slug       String
-  name       String
-  tradeName  String?
-  document   String? // CNPJ da empresa cliente
-  isVerified Boolean @default(false)
-
-  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  members  CompanyMember[]
-  listings Listing[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([tenantId, slug])
-}
-
-model CompanyMember {
-  id        String @id @default(uuid())
-  companyId String
-  userId    String
-  role      String @default("MEMBER") // Ex: "OWNER", "MANAGER", "MEMBER"
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([companyId, userId]) // Um usuário não entra duas vezes na mesma empresa
-}
-
-// =========================================================================
-// FASE 1: TAXONOMIA E MARKETPLACE (Listings)
-// =========================================================================
-
-model Category {
-  id          String  @id @default(uuid())
-  tenantId    String
-  slug        String
-  name        String
-  description String?
-
-  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  attributes CategoryAttribute[]
-  listings   Listing[]
-
-  createdAt DateTime @default(now())
-
-  @@unique([tenantId, slug])
-}
-
-model CategoryAttribute {
-  id         String  @id @default(uuid())
-  tenantId   String
-  categoryId String
-  name       String
-  label      String
-  type       String // "STRING", "NUMBER", "BOOLEAN", "CURRENCY"
-  isRequired Boolean @default(false)
-
-  tenant   Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  category Category                @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  values   ListingAttributeValue[]
-
-  @@unique([categoryId, name])
-}
-
-model Listing {
-  id         String @id @default(uuid())
-  tenantId   String
-  companyId  String
-  categoryId String
-
-  slug        String
-  title       String
-  description String
-  price       Decimal?      @db.Decimal(15, 2)
-  status      ListingStatus @default(DRAFT)
-  viewCount   Int           @default(0)
-  isFeatured     Boolean    @default(false)
-  featuredUntil  DateTime?
-  featuredPriority Int      @default(0) // 0 = normal, 10 = destaque, 20 = premium
-
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id])
-
-  media       ListingMedia[]
-  attrValues  ListingAttributeValue[]
-  leads       Lead[]
-  favorites   Favorite[]
-  chatThreads ChatThread[]
-  aiInsights  AiInsight[]
-  moderationActions ModerationAction[]
-  metrics     Metric[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([tenantId, slug])
-  @@index([tenantId, status, createdAt])
-}
-
-model ListingMedia {
-  id        String  @id @default(uuid())
+model DataRoomDocument {
+  id        String   @id @default(uuid())
+  tenantId  String
   listingId String
+  name      String
   url       String
-  mediaType String // "IMAGE", "VIDEO", "DOCUMENT"
-  isCover   Boolean @default(false)
-
+  mediaType String   @default("document")
+  createdAt DateTime @default(now())
   listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-}
-
-model ListingAttributeValue {
-  id          String   @id @default(uuid())
-  listingId   String
-  attributeId String
-  valueStr    String?
-  valueNum    Decimal? @db.Decimal(15, 2)
-  valueBool   Boolean?
-
-  listing   Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  attribute CategoryAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
-
-  @@unique([listingId, attributeId])
-}
-
-// =========================================================================
-// FASE 2: SOCIAL E NEGOCIAÇÃO
-// =========================================================================
-
-model Lead {
-  id          String       @id @default(uuid())
-  tenantId    String
-  listingId   String
-  investorId  String
-  message     String
-
-  // AI Qualification Fields (preenchidos pelo Worker assíncrono)
-  score             Int?          // 0-100 AI lead fit score
-  intentLevel       IntentLevel?  // LOW, MEDIUM, HIGH
-  aiClassification  String?       // Ex: "QUALIFIED", "UNQUALIFIED", "NEEDS_INFO"
-  aiReasonSummary   String?       // Justificativa da IA em 1-2 frases
-  aiRecommendedAction String?     // Ex: "Agendar call", "Solicitar docs", "Descartar"
-  aiProcessedAt     DateTime?     // Timestamp de quando a IA processou
-  aiError           String?       // Se houve falha, registra aqui
-
-  listing   Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  investor  User       @relation(fields: [investorId], references: [id], onDelete: Cascade)
-  proposals Proposal[]
-
-  createdAt DateTime @default(now())
-
-  // Um investidor não devia ter milhares de leads soltos idênticos
-  @@index([tenantId, investorId])
-  @@index([listingId])
-}
-
-model Proposal {
-  id         String @id @default(uuid())
-  leadId     String
-  investorId String
-
-  valueOffered Decimal        @db.Decimal(15, 2)
-  conditions   String?
-  status       ProposalStatus @default(OPEN)
-
-  lead     Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  investor User @relation(fields: [investorId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Favorite {
-  id        String @id @default(uuid())
-  listingId String
-  userId    String
-
-  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([listingId, userId])
-}
-
-model ChatThread {
-  id        String @id @default(uuid())
-  tenantId  String
-  listingId String
-  leadId    String?
-
-  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  listing  Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  messages ChatMessage[]
-  participants ChatParticipant[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ChatParticipant {
-  id       String @id @default(uuid())
-  threadId String
-  userId   String
-
-  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  joinedAt DateTime @default(now())
-
-  @@unique([threadId, userId])
-}
-
-model ChatMessage {
-  id       String  @id @default(uuid())
-  threadId String
-  senderId String
-  body     String  @db.Text
-  isRead   Boolean @default(false)
-
-  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  sender User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-}
-
-// =========================================================================
-// NOTIFICAÇÕES IN-APP
-// =========================================================================
-
-model Notification {
-  id       String  @id @default(uuid())
-  userId   String
-  type     String  // NEW_LEAD, NEW_PROPOSAL, NEW_MESSAGE, LISTING_STATUS_CHANGE, MODERATION_ACTION
-  title    String
-  body     String
-  isRead   Boolean @default(false)
-  metadata Json?   // { listingId, leadId, threadId, etc }
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([userId, isRead])
-}
-
-// =========================================================================
-// MODERAÇÃO OPERACIONAL
-// =========================================================================
-
-model ModerationAction {
-  id          String @id @default(uuid())
-  listingId   String
-  moderatorId String
-  action      String // APPROVE, REJECT, FLAG, OVERRIDE_AI
-  reason      String?
-  previousStatus String?
-  newStatus   String?
-
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  moderator User    @relation("moderationActions", fields: [moderatorId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([listingId])
 }
 
-// =========================================================================
-// FASE 3: MONETIZAÇÃO, AUDITORIA E INTELIGÊNCIA ARTIFICIAL
-// =========================================================================
-
-model Plan {
-  id          String   @id @default(uuid())
-  tenantId    String?
-  tier        PlanTier
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(15, 2)
-  priceYearly Decimal? @db.Decimal(15, 2)
-  currency    String   @default("BRL")
-  isPublic    Boolean  @default(true)
-
-  // Limites de recursos
-  maxListings       Int @default(1)
-  maxLeadsPerMonth  Int @default(10)
-  maxFeaturedListings Int @default(0)
-
-  // Feature Flags
-  hasAiQualification Boolean @default(false)
-  hasChat            Boolean @default(false)
-  hasPrioritySupport Boolean @default(false)
-  hasAnalytics       Boolean @default(false)
-  hasApiAccess       Boolean @default(false)
-  hasCustomBranding  Boolean @default(false)
-
-  tenant        Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  subscriptions Subscription[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Subscription {
-  id       String @id @default(uuid())
-  tenantId String
-  planId   String
-
-  startDate  DateTime  @default(now())
-  endDate    DateTime?
-  isActive   Boolean   @default(true)
-  canceledAt DateTime?
-  cancelReason String?
-
-  // Billing-ready fields
-  billingCycle  String @default("MONTHLY") // MONTHLY, YEARLY
-  externalId    String? // Stripe subscription ID ou similar
-  lastPaymentAt DateTime?
-  nextBillingAt DateTime?
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  plan   Plan   @relation(fields: [planId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model AuditLog {
-  id         String  @id @default(uuid())
+model DataRoomRequest {
+  id         String         @id @default(uuid())
   tenantId   String
-  userId     String?
-  action     String // Ex: "USER_DELETED", "PLAN_UPGRADED"
-  entityType String
-  entityId   String
-  metadata   Json?
+  listingId  String
+  investorId String
+  status     DataRoomStatus @default(PENDING)
+  message    String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  investor   User           @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  listing    Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-
-  @@index([tenantId, entityType])
+  @@unique([listingId, investorId])
+  @@index([tenantId, status])
 }
-
-model AiJob {
-  id       String      @id @default(uuid())
-  tenantId String
-  traceId  String      @unique
-  jobName  String // Ex: QUALIFY_LEAD
-  status   AiJobStatus @default(PENDING)
-  payload  Json
-  result   Json?
-  error    String?
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  createdAt   DateTime  @default(now())
-  completedAt DateTime?
-}
-
-model AiInsight {
-  id               String   @id @default(uuid())
-  listingId        String
-  scamProbability  Decimal? @db.Decimal(5, 4) // 0.0000 to 1.0000
-  recommendedTitle String?
-  flags            String[]
-
-  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-}
-
-// =========================================================================
-// FASE 7: ANALYTICS E MÉTRICAS
-// =========================================================================
-
-model Metric {
-  id        String   @id @default(uuid())
-  tenantId  String
-  listingId String?
-  type      String   // VIEW, LEAD_CLICK, PROPOSAL_SENT, FAVORITE
-  value     Float    @default(1.0)
-  metadata  Json?
-
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-
-  @@index([tenantId, type, createdAt])
-}
-
-model DailyMetric {
-  id        String   @id @default(uuid())
-  tenantId  String
-  date      DateTime @db.Date
-  type      String   // Ex: DAILY_VIEWS, DAILY_LEADS
-  value     Int      @default(0)
-
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([tenantId, date, type])
-}
-
-

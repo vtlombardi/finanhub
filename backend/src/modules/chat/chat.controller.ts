@@ -1,47 +1,52 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  /** Criar ou obter thread existente para um listing */
-  @UseGuards(JwtAuthGuard)
-  @Post('threads')
-  async getOrCreateThread(@Request() req: any, @Body() body: { listingId: string }) {
-    return this.chatService.getOrCreateThread(body.listingId, req.user.userId);
+  /**
+   * Obtém todas as threads (conversas) do usuário ou tenant (se admin).
+   */
+  @Get('threads')
+  async getThreads(@Request() req) {
+    const { userId, tenantId, role } = req.user;
+    return this.chatService.getThreads(userId, tenantId, role);
   }
 
-  /** Enviar mensagem */
-  @UseGuards(JwtAuthGuard)
-  @Post('threads/:threadId/messages')
+  /**
+   * Obtém o histórico de mensagens de uma conversa.
+   */
+  @Get('threads/:id/messages')
+  async getMessages(@Param('id') threadId: string, @Request() req) {
+    const { userId, role } = req.user;
+    return this.chatService.getMessages(threadId, userId, role);
+  }
+
+  /**
+   * Envia uma nova mensagem em um thread.
+   */
+  @Post('threads/:id/messages')
   async sendMessage(
-    @Param('threadId') threadId: string,
-    @Request() req: any,
-    @Body() body: { body: string },
+    @Param('id') threadId: string,
+    @Body('body') body: string,
+    @Request() req,
   ) {
-    return this.chatService.sendMessage(threadId, req.user.userId, body.body);
+    const { userId, tenantId, role } = req.user;
+    if (!body || body.trim() === '') {
+      throw new ForbiddenException('A mensagem não pode estar vazia.');
+    }
+    return this.chatService.sendMessage(userId, tenantId, role, threadId, body);
   }
 
-  /** Mensagens de um thread */
-  @UseGuards(JwtAuthGuard)
-  @Get('threads/:threadId/messages')
-  async getMessages(@Param('threadId') threadId: string, @Request() req: any) {
-    return this.chatService.getMessages(threadId, req.user.userId);
-  }
-
-  /** Inbox do usuário */
-  @UseGuards(JwtAuthGuard)
-  @Get('inbox')
-  async getInbox(@Request() req: any) {
-    return this.chatService.getInbox(req.user.userId);
-  }
-
-  /** Contador global de não-lidas */
-  @UseGuards(JwtAuthGuard)
-  @Get('unread')
-  async getUnreadCount(@Request() req: any) {
-    return this.chatService.getUnreadCount(req.user.userId);
+  /**
+   * Cria uma nova conversa (ex: suporte).
+   */
+  @Post('threads')
+  async createThread(@Body() body: { targetAdminId?: string; listingId?: string }, @Request() req) {
+    const { userId, tenantId } = req.user;
+    return this.chatService.createThread(userId, tenantId, body.targetAdminId, body.listingId);
   }
 }

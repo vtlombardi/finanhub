@@ -17,12 +17,11 @@ export class RolesGuard implements CanActivate {
     }
     
     const { user } = context.switchToHttp().getRequest();
-    
-    // Supondo que user contem um array de roles e exista. Aqui você estende conforme sua lógica do DB
-    if (!user || !user.roles) {
-       return false;
+
+    if (!user || !user.role) {
+      return false;
     }
-    
-    return requiredRoles.some((role) => user.roles?.includes(role));
+
+    return requiredRoles.includes(user.role);
   }
 }

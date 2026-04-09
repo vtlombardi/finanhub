@@ -10,7 +10,7 @@ export function Sidebar() {
     { href: '/dashboard', label: 'Overview', icon: Home },
     { href: '/dashboard/listings', label: 'Anúncios M&A', icon: List },
     { href: '/dashboard/leads', label: 'Leads & Propostas', icon: Tag },
-    { href: '/dashboard/inbox', label: 'Mensagens', icon: MessageSquare },
+    { href: '/dashboard/messages', label: 'Mensagens', icon: MessageSquare },
     { href: '/dashboard/favorites', label: 'Favoritos', icon: Heart },
     { href: '/dashboard/notifications', label: 'Notificações', icon: Bell },
     { href: '/dashboard/moderation', label: 'Moderação', icon: Shield },

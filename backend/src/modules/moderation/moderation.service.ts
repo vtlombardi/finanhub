@@ -12,16 +12,24 @@ export class ModerationService {
   /**
    * Retorna fila de anúncios pendentes de revisão ou flagged.
    */
-  async getQueue(statuses: string[] = ['PENDING_AI_REVIEW', 'FLAGGED']) {
-    return this.prisma.listing.findMany({
-      where: { status: { in: statuses as any } },
-      include: {
-        tenant: { select: { name: true } },
-        category: { select: { name: true } },
-        aiInsights: { orderBy: { createdAt: 'desc' }, take: 1 },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+  async getQueue(statuses: string[] = ['PENDING_AI_REVIEW', 'FLAGGED'], page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.listing.findMany({
+        where: { status: { in: statuses as any } },
+        include: {
+          tenant: { select: { name: true } },
+          category: { select: { name: true } },
+          aiInsights: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+        orderBy: { createdAt: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.listing.count({ where: { status: { in: statuses as any } } }),
+    ]);
+
+    return { data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
   /**

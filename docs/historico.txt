@@ -1,0 +1,21 @@
+[2026-04-08] U:mapear pendências do projeto | S:listou 7 pendências priorizadas
+[2026-04-08] U:implementar TenantsService | S:CRUD + assertAccess + member routes (GET/POST/PATCH/DELETE /tenants/members)
+[2026-04-08] U:implementar AdsService | S:módulo de banners (LEADERBOARD/MOBILE_BANNER/SIDEBAR) + integração vitrine
+[2026-04-08] U:upload de mídia real | S:multer diskStorage /uploads/ + static assets + handlers no form de edição
+[2026-04-08] U:forgot password flow | S:forgotPassword+resetPassword+acceptInvite backend+frontend+mail
+[2026-04-08] U:dashboard frontend com dados reais | S:wired AnalyticsService.getSummary no DashboardController
+[2026-04-08] U:convidar membros ao tenant | S:UsersService invite+role+remove + RBAC + /dashboard/members + /accept-invite
+[2026-04-08] U:mensagens com integração real | S:ChatService wired + AuthProvider fix user.id vs userId
+[2026-04-08] U:AI Agents fix listings PENDING_AI_REVIEW | S:prisma config + AdReviewWorker rewrite + AiInsight + re-trigger on FLAGGED edit
+[2026-04-08] U:verificar deals/[slug] dados reais | S:confirmado real + removido mock fallback no catch
+[2026-04-08] U:moderation panel frontend | S:/dashboard/moderation (queue+ações+histórico+reason) + sidebar fa-shield
+[2026-04-08] U:CategoriesService CRUD | S:create+update+remove tenant-scoped + /dashboard/categories + sidebar fa-tags
+[2026-04-08] U:login feedback ?reset=success | S:resetSuccess banner no LoginLogic
+[2026-04-08] U:/dashboard/leads | S:página B2B (stats+filtros+AI insights+proposals aceitar/rejeitar) + sidebar fa-inbox
+[2026-04-08] U:/dashboard/stats 404 | S:página KPIs+BarChart Recharts+exportCSV via AnalyticsService
+[2026-04-08] U:LeadQualificationWorker | S:worker existia com bug JSON.parse — corrigido com parseAiJson()
+[2026-04-08] U:notificações frontend | S:NotificationBell (polling+badge+dropdown) + /dashboard/notifications + inbox
+[2026-04-08] U:/register 404 ou vazia | S:página existia, bug: não salvava JWT pós verify-email — corrigido
+[2026-04-08] U:CategoryAttributes CRUD | S:service+controller+dto (TEXT/NUMBER/BOOLEAN/URL) + AttributesPanel no /dashboard/categories
+[2026-04-08] U:Data Room / NDA flow | S:schema+migração+DataRoomModule (9 endpoints) + DataRoomSection (5 estados) + /dashboard/dataroom
+[2026-04-08] U:salvar contexto e memória do projeto | S:criado ESTADO.md + historico.txt em /docs/

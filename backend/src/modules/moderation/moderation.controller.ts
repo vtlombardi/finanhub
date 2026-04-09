@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ModerationService } from './moderation.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @Controller('moderation')
 export class ModerationController {
@@ -9,9 +9,17 @@ export class ModerationController {
   /** Fila de anúncios para revisão */
   @UseGuards(JwtAuthGuard)
   @Get('queue')
-  async getQueue(@Query('status') status?: string) {
+  async getQueue(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
     const statuses = status ? status.split(',') : ['PENDING_AI_REVIEW', 'FLAGGED'];
-    return this.moderationService.getQueue(statuses);
+    return this.moderationService.getQueue(
+      statuses,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
   }
 
   /** Aplicar ação de moderação */

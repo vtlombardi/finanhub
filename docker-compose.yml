@@ -57,14 +57,16 @@ services:
     command: npm run start:dev
     environment:
       - NODE_ENV=development
-      - PORT=3001
+      - PORT=3000
       - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-finanhub}?schema=public
       - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ./backend:/app # Mapeamento VSCode live Reload
       - /app/node_modules # Impede overlay do host e força usar linux binaries localmente
     ports:
-      - "3001:3001" # Alinhado com snippet 3001:3001
+      - "3000:3000"
     depends_on:
       db:
         condition: service_healthy

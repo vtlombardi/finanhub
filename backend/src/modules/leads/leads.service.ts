@@ -3,38 +3,54 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
-const ALLOWED_PROPOSAL_STATUS = ['PENDING', 'ACCEPTED', 'REJECTED'] as const;
+const ALLOWED_PROPOSAL_STATUS = ['OPEN', 'ACCEPTED', 'REJECTED', 'COUNTER_OFFER', 'WITHDRAWN'] as const;
 type AllowedProposalStatus = (typeof ALLOWED_PROPOSAL_STATUS)[number];
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private leadQueue: Queue;
 
-  async createLead(
-    tenantId: string,
-    investorId: string,
-    listingId: string,
-    message: string,
-  ) {
-    const listing = await this.prisma.listing.findFirst({
-      where: {
-        id: listingId,
-        tenantId,
+  constructor(private readonly prisma: PrismaService) {
+    this.leadQueue = new Queue('ai-lead-qualification', {
+      connection: {
+        host: process.env.REDIS_HOST || '127.0.0.1',
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        maxRetriesPerRequest: null,
       },
     });
 
-    if (!listing) {
-      throw new NotFoundException('Listing não encontrado');
+    // Silencia erros de conexão se o Redis não estiver rodando localmente
+    this.leadQueue.on('error', () => {});
+  }
+
+  async createLead(
+    investorId: string,
+    data: CreateLeadDto,
+  ) {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: data.listingId },
+    });
+
+    if (!listing || listing.status !== 'ACTIVE') {
+      throw new NotFoundException('Listing não encontrado ou indisponível');
     }
 
-    return this.prisma.lead.create({
+    const lead = await this.prisma.lead.create({
       data: {
-        tenantId,
-        listingId,
+        tenantId: listing.tenantId,
+        listingId: data.listingId,
         investorId,
-        message: message ?? '',
+        message: data.message ?? '',
+        userName: data.userName,
+        userEmail: data.userEmail,
+        userPhone: data.userPhone,
+        userCompany: data.userCompany,
+        objective: data.objective,
+        investmentRange: data.investmentRange,
+        mediationAccepted: data.mediationAccepted,
         score: 0,
       },
       include: {
@@ -42,6 +58,19 @@ export class LeadsService {
         investor: true,
       },
     });
+
+    // Enfileira qualificação AI de forma assíncrona — falha silenciosa para não bloquear o usuário
+    try {
+      await this.leadQueue.add(
+        'qualify-lead-job',
+        { leadId: lead.id, tenantId: lead.tenantId },
+        { attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
+      );
+    } catch (e) {
+      console.error('[LeadsService] Falha ao enfileirar qualificação AI:', e);
+    }
+
+    return lead;
   }
 
   async getLeadsForTenant(tenantId: string) {

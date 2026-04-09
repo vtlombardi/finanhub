@@ -1,0 +1,19 @@
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.prod
+.env.production
+
+# Build output
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log

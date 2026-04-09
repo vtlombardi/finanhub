@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 import "./globals.css";
 
 const poppins = Poppins({
-  variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
 });
 
-import { AuthProvider } from '@/features/auth/AuthProvider';
-
 export const metadata: Metadata = {
-  title: "Página Inicial | FINANHUB",
-  description: "FINANHUB — Onde negócios sérios se encontram. Conecte-se com investidores e empreendedores em um ambiente seguro e profissional.",
+  title: "Pagina Inicial | FINANHUB",
+  description: "Onde negócios e oportunidades se encontram",
 };
 
 export default function RootLayout({
@@ -21,11 +20,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${poppins.variable} h-full antialiased`}>
+    <html lang="pt" suppressHydrationWarning>
       <head>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className={poppins.variable} suppressHydrationWarning>
         <AuthProvider>
           {children}
         </AuthProvider>

@@ -1,63 +1,61 @@
-# FINANHUB - Documentação Módulo Backend
+# FINANHUB - Módulo Backend (NestJS)
 
-## 1. Visão do Backend
-Fornecer a API principal de negócios, imaculada nas proteções de multitenant. Operará o núcleo transacional como o hub central B2B para o frontend consumir e integrar AI-Agents.
+## 1. Responsabilidade do Módulo
+Atuar como o núcleo lógico, motor de regras de negócio e gateway de dados da plataforma. Responsável por autenticação, autorização (RBAC), gestão multi-tenant, processamento de propostas e orquestração de APIs.
 
-## 2. Arquitetura Modular
-Proposto em NestJS/Node.js, adotando DDD prático (Domain Driven Design). Responsabilidades apartadas entre as portas de rede (Controllers) e lógicas abstratas (Services/Providers).
+## 2. O Que Ele Pode Fazer
+- Expor APIs RESTful documentadas.
+- Validar tokens JWT e gerenciar sessões.
+- Executar lógicas complexas de negócio (M&A Flow, Cálculos).
+- Interagir com o banco de dados via Prisma.
+- Gerenciar o Motor de Monetização (Tiers BASE, PROFESSIONAL, ELITE).
+- Enforcement de limites de uso e acesso via `SubscriptionGuard`.
+- Cálculo de créditos pro-rata para transição de planos.
+- Disparar eventos para filas (Redis/BullMQ) para os AI-Agents.
+- Gerar URLs assinadas para o Cloud Storage.
 
-## 3. Módulos
-- `/auth`, `/users`, `/tenants`, `/opportunities (ads)`, `/chat`, `/leads`, `/billing`, `/webhook-ai`, `/admin`.
+## 3. O Que Ele NÃO Pode Fazer
+- **NUNCA** conter lógica de apresentação ou renderização de HTML/CSS.
+- **NUNCA** depender da estrutura interna do diretório `/frontend`.
+- **NUNCA** assumir que o cliente é exclusivamente o frontend web (deve ser API-First).
+- **NUNCA** processar tarefas pesadas de IA de forma síncrona (deve delegar ao `/ai-agents`).
 
-## 4. Entidades Centrais
-- Tenant (Empresas baseadas).
-- Ads (Anúncios / Classificados B2B ofertados por tenants).
-- Leads / Proposals (Intentos transacionais interligados a tenants ofertantes).
+## 4. Dependências Permitidas
+- Framework: NestJS 10.x.
+- ORM: Prisma Client.
+- Auth: Passport.js, JWT.
+- Queue: BullMQ / IORedis.
+- Utility: Class-validator, Bcrypt.
 
-## 5. Casos de Uso (Use Cases)
-- Criar Anúncio (Checagem de plano de cota vs moderação inicial).
-- Converter Proposta em Chat Seguro (Match making e geração de chaves socket).
-- Aprovar pagamento Sponsored (Emissão de recibos digitais e Webhooks Stripe).
+## 5. Interfaces de Comunicação
+- **Frontend**: REST API (Protocolo HTTP/JSON).
+- **Database**: Prisma Proxy (Protocolo TCP/IP).
+- **AI-Agents**: Queue (BullMQ/Redis) e Webhooks.
+- **External**: AWS SDK / MinIO SDK para Storage.
 
-## 6. Autenticação
-Base JWT assimétrico com expiração estrita baseada no ciclo HMAC ou chaves privadas/públicas. Handshake inicial seguro.
+## 6. Variáveis de Ambiente Usadas
+- `PORT`: Porta de execução (padrão 3001).
+- `DATABASE_URL`: String de conexão com PostgreSQL.
+- `JWT_SECRET`: Segredo para assinatura de tokens.
+- `REDIS_URL`: Conexão para o broker de mensagens.
+- `STORAGE_ENDPOINT`: Credenciais do bucket S3.
 
-## 7. Autorização
-Roles injetáveis aplicadas diretamente sobre endpoints via decorators como `@Roles('ADMIN', 'OWNER')` em nestjs Guards.
+## 7. Como Rodar Isoladamente
+1. `cd backend`
+2. `npm install`
+3. `npm run start:dev`
+4. Requer um banco de dados rodando (pode ser o container especificado em `/database`).
 
-## 8. Multi-Tenant
-Forte aplicação do escopo (Cls-hooked ou injeção de Tenant via req contextual no middleware) assegurando falha imediata e 403 (Forbidden) se um acesso tenta forçar IDs cruzados por força-bruta.
+## 8. Como Testar Isoladamente
+- **Unitários**: `npm run test`.
+- **E2E**: `npm run test:e2e` (Jest).
+- **Swagger**: Acessível em `/api/docs` quando rodando.
 
-## 9. Filas
-Configurações amparadas em BullMQ e Redis manipulando jobs em backgrounds vitais (Ex: disparo de 20 e-mails massivos para investidores num match específico demorado).
+## 9. Como Integrar Com o Resto
+O Backend consome a `DATABASE_URL` do módulo `database/` e fornece a `API_URL` para o módulo `frontend/`. A comunicação com `ai-agents` é feita via broker de mensagens definido na `REDIS_URL`.
 
-## 10. Eventos
-Event Emitters emitindo processos fracamente acoplados do core. (Ex: Ao persistir um anuncio, disparamos a `AD_CREATED` para notificar IA em paralelo).
-
-## 11. Logs
-Registro vital de trilhas no formato JSON (Pino / Winston) formatadas para coleta no CloudWatch / ELK. Nenhuma deleção deve ocorrer em base sem log correspondente de `soft_delete`.
-
-## 12. Auditoria
-Gravação persistente de quem manipulou a base de permissões ou expurgou empresas. Tabela `AuditLogs`.
-
-## 13. Antifraude
-Serviços dedicados com limites de tempo e rate-limiting integrados com o diretório `/ai-agents` para pausar publicações suspeitosamente volumosas.
-
-## 14. Integração com IA
-Consumimos microsserviços via APIs RPC/HTTP de sub-agentes autônomos ou gatilhos indiretos via Redis Queue.
-
-## 15. Storage
-Assentamentos documentais (CDNs e S3 Buckets presigned) acoplados a módulos nativos (AWS SDK/MinIO) gerando pre-urls evitando upload custoso através do Node Container (frontend submete no bucket direto via token validado pelo servidor).
-
-## 16. Notificações
-Socket.io (Tempo real) rodando sincronizado para sinos e banners push combinados a canais transacionais tipo Mailgun.
-
-## 17. Padrões REST
-URIs de modelagem puramente baseada em RFC:
-- `GET /api/v1/resource` -> Coleções
-- `POST /api/v1/resource/:id/sub-resource` -> Relações
-
-## 18. Backlog Técnico Backend
-- [x] Scaffold Arquitetural NestJS na pasta backend (Módulos Base, Auth, Tenants criados).
-- [ ] Endpoints Seed Mock.
-- [ ] Pipeline Local de teste para Integrações de JWT.
+## 10. Estrutura de Pastas Explicada
+- `src/modules/`: Divisão vertical por domínio (Auth, Ads, Tenants).
+- `src/common/`: Guards, Interceptors, Decorators e filtros de exceção globais.
+- `src/modules/database/`: Integração com Prisma Service isolada.
+- `src/main.ts`: Ponto de entrada e configuração global do NestJS.

@@ -1,57 +1,44 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { PlanTier } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 /** Definição centralizada dos tiers e seus limites padrão */
 const TIER_DEFAULTS = {
-  FREE: {
-    name: 'Starter',
-    description: 'Ideal para quem está começando a explorar o marketplace M&A.',
-    price: 0,
+  BASE: {
+    name: 'Base',
+    description: 'Exposição no Mercado e rastro digital.',
+    price: 150.0,
     maxListings: 1,
     maxLeadsPerMonth: 5,
     maxFeaturedListings: 0,
     hasAiQualification: false,
-    hasChat: false,
+    hasChat: true,
     hasPrioritySupport: false,
-    hasAnalytics: false,
+    hasAnalytics: true,
     hasApiAccess: false,
     hasCustomBranding: false,
   },
-  BASIC: {
-    name: 'Essencial',
-    description: 'Para empresas que querem visibilidade e negociação ativa.',
-    price: 297,
-    maxListings: 5,
+  PROFESSIONAL: {
+    name: 'Professional',
+    description: 'Aceleração de Negócios com VDR Simplificado.',
+    price: 490.0,
+    maxListings: 1,
     maxLeadsPerMonth: 50,
     maxFeaturedListings: 1,
     hasAiQualification: true,
     hasChat: true,
     hasPrioritySupport: false,
-    hasAnalytics: false,
+    hasAnalytics: true,
     hasApiAccess: false,
     hasCustomBranding: false,
   },
-  PRO: {
-    name: 'Profissional',
-    description: 'Visibilidade máxima, IA avançada e suporte prioritário.',
-    price: 997,
-    maxListings: 25,
-    maxLeadsPerMonth: 500,
-    maxFeaturedListings: 5,
-    hasAiQualification: true,
-    hasChat: true,
-    hasPrioritySupport: true,
-    hasAnalytics: true,
-    hasApiAccess: false,
-    hasCustomBranding: true,
-  },
-  ENTERPRISE: {
-    name: 'Enterprise',
-    description: 'Sob medida para operações M&A de grande porte.',
-    price: 4997,
-    maxListings: -1, // ilimitado
-    maxLeadsPerMonth: -1,
-    maxFeaturedListings: -1,
+  ELITE: {
+    name: 'Elite',
+    description: 'Liquidez Máxima com Agente HAYIA 24/7.',
+    price: 1950.0,
+    maxListings: 10,
+    maxLeadsPerMonth: 999,
+    maxFeaturedListings: 3,
     hasAiQualification: true,
     hasChat: true,
     hasPrioritySupport: true,
@@ -86,18 +73,18 @@ export class PlansService {
     });
 
     if (!subscription) {
-      // Retornar indicação de plano free (sem assinatura formal)
+      // Retornar indicação de plano base (sem assinatura formal configurada)
       return {
         subscription: null,
-        plan: { tier: 'FREE', ...TIER_DEFAULTS.FREE },
-        isFreeTier: true,
+        plan: { tier: 'BASE', ...TIER_DEFAULTS.BASE },
+        isFreeTier: false, // No Finanhub, até o Base é pago por anúncio
       };
     }
 
     return {
       subscription,
       plan: subscription.plan,
-      isFreeTier: subscription.plan.tier === 'FREE',
+      isFreeTier: false,
     };
   }
 
@@ -107,7 +94,7 @@ export class PlansService {
   async getUsage(tenantId: string) {
     const { plan } = await this.getActiveSubscription(tenantId);
 
-    const [activeListings, totalLeadsThisMonth, featuredListings] = await Promise.all([
+    const [activeListings, totalLeadsThisMonth, featuredListings, dataRoomDocs] = await Promise.all([
       this.prisma.listing.count({
         where: { tenantId, status: { in: ['ACTIVE', 'PENDING_AI_REVIEW'] as any } },
       }),
@@ -122,6 +109,9 @@ export class PlansService {
       this.prisma.listing.count({
         where: { tenantId, isFeatured: true },
       }),
+      this.prisma.dataRoomDocument.count({
+        where: { tenantId },
+      }),
     ]);
 
     return {
@@ -133,6 +123,7 @@ export class PlansService {
         listings: { current: activeListings, limit: plan.maxListings, unlimited: plan.maxListings === -1 },
         leadsPerMonth: { current: totalLeadsThisMonth, limit: plan.maxLeadsPerMonth, unlimited: plan.maxLeadsPerMonth === -1 },
         featuredListings: { current: featuredListings, limit: plan.maxFeaturedListings, unlimited: plan.maxFeaturedListings === -1 },
+        dataRoomDocs: { current: dataRoomDocs, limit: plan.tier === 'ELITE' ? -1 : 10, unlimited: plan.tier === 'ELITE' },
       },
       features: {
         aiQualification: plan.hasAiQualification,
@@ -141,25 +132,42 @@ export class PlansService {
         analytics: plan.hasAnalytics,
         apiAccess: plan.hasApiAccess,
         customBranding: plan.hasCustomBranding,
+        aiMatching: plan.tier === 'ELITE',
       },
     };
   }
 
+
   /**
    * Ativa uma assinatura de plano para um tenant. 
-   * Prepara para billing futuro (externalId, billingCycle).
+   * Trata a lógica de upgrade com desconto (crédito pro-rata).
    */
   async subscribe(tenantId: string, planId: string, billingCycle = 'MONTHLY') {
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) throw new NotFoundException('Plano não encontrado.');
 
-    // Desativar assinatura atual
+    // 1. Verificar se há assinatura ativa para cálculo de crédito
+    const currentSub = await this.prisma.subscription.findFirst({
+      where: { tenantId, isActive: true },
+      include: { plan: true },
+    });
+
+    let creditToApply = 0;
+
+    if (currentSub && currentSub.plan.tier === PlanTier.PROFESSIONAL && plan.tier === PlanTier.ELITE) {
+      // Regra de Negócio: Ao migrar de Professional para Elite no mesmo dia/período,
+      // o valor pago no Professional (R$ 490) é abatido do Elite.
+      creditToApply = Number(currentSub.plan.price);
+      console.log(`[Billing] Aplicando crédito de R$ ${creditToApply} (Upgrade Pro -> Elite)`);
+    }
+
+    // 2. Desativar assinatura atual
     await this.prisma.subscription.updateMany({
       where: { tenantId, isActive: true },
       data: { isActive: false, endDate: new Date() },
     });
 
-    // Criar nova assinatura
+    // 3. Criar nova assinatura com crédito aplicado (se houver)
     const subscription = await this.prisma.subscription.create({
       data: {
         tenantId,
@@ -174,11 +182,15 @@ export class PlansService {
       include: { plan: true },
     });
 
-    return subscription;
+    return {
+      ...subscription,
+      finalPrice: Number(plan.price) - creditToApply,
+      discountApplied: creditToApply,
+    };
   }
 
   /**
-   * Cancela a assinatura ativa (downgrade para FREE).
+   * Cancela a assinatura ativa (downgrade para BASE).
    */
   async cancelSubscription(tenantId: string, reason?: string) {
     const current = await this.prisma.subscription.findFirst({
@@ -192,12 +204,13 @@ export class PlansService {
       data: {
         canceledAt: new Date(),
         cancelReason: reason,
-        // Mantém ativa até o final do período
+        // Mantém ativa até o final do período conforme regra SaaS
       },
     });
 
     return { message: 'Assinatura cancelada. Permanecerá ativa até o final do período.' };
   }
+
 
   /**
    * Verifica se um tenant pode criar mais listings (enforcement de limite).
@@ -280,15 +293,16 @@ export class PlansService {
    * Seed dos planos padrão (utility para setup inicial).
    */
   async seedDefaultPlans() {
-    const existing = await this.prisma.plan.count();
-    if (existing > 0) return { message: 'Planos já existem.' };
+    // Limpa assinaturas e planos antigos para permitir o novo setup de 5 níveis
+    await this.prisma.subscription.deleteMany();
+    await this.prisma.plan.deleteMany();
 
     const plans = Object.entries(TIER_DEFAULTS).map(([tier, data]) => ({
       tier: tier as any,
       name: data.name,
       description: data.description,
       price: data.price,
-      priceYearly: data.price > 0 ? data.price * 10 : 0, // 2 meses grátis no anual
+      priceYearly: data.price > 0 ? Number(data.price) * 10 : 0, 
       maxListings: data.maxListings,
       maxLeadsPerMonth: data.maxLeadsPerMonth,
       maxFeaturedListings: data.maxFeaturedListings,

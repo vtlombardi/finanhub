@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CreateUserDto } from './dto/create-users.dto';
 
 @Controller('users')
 export class UsersController {
@@ -9,13 +10,11 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Request() req) {
-    // Busca apenas usuários do mesmo tenant do logado
     return this.usersService.findAllByTenant(req.user.tenantId);
   }
 
-  // Permite criar usuários vinculados diretamente à hierarquia Tenant
   @Post()
-  async createUser(@Body() body: any) {
+  async createUser(@Body() body: CreateUserDto) {
     return this.usersService.createUser(body);
   }
 }

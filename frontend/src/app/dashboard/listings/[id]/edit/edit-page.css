@@ -1,0 +1,105 @@
+/* Estilos para aproximar da fidelidade visual dos screenshots do eDirectory */
+
+.tag-category {
+    background-color: #f1f1f1;
+    border: 1px solid #ccc;
+    color: #333;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.tag-category i {
+    cursor: pointer;
+    color: #999;
+}
+
+.tag-category i:hover {
+    color: #666;
+}
+
+.display-block {
+    display: block;
+}
+
+.font-weight-bold {
+    font-weight: 700;
+}
+
+/* Ajustes para o layout do painel */
+.panel-form {
+    border: 1px solid #e7e7e7;
+    margin-bottom: 30px;
+    background-color: #fff;
+    box-shadow: none;
+}
+
+.panel-form .panel-heading {
+    background-color: #f9f9f9;
+    border-bottom: 1px solid #e7e7e7;
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    padding: 12px 15px;
+}
+
+.panel-form .panel-body {
+    padding: 20px;
+}
+
+.section-heading-title {
+    font-size: 24px;
+    font-weight: 300;
+    color: #333;
+}
+
+/* Header config button */
+.btn-progress {
+    background-color: #004a8e;
+    border-color: #004a8e;
+    color: #fff;
+    position: relative;
+    padding-right: 45px;
+    font-size: 13px;
+}
+
+.progress-badge {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: #003366;
+    padding: 6px 10px;
+    border-radius: 0 4px 4px 0;
+    font-weight: bold;
+}
+
+.label-lg {
+    font-size: 18px;
+    font-weight: 400;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.input-lg {
+    height: 46px;
+    font-size: 18px;
+}
+
+/* Sidebar fixes */
+.main-sidebar {
+    background-color: #001e3c;
+}
+
+.sidebar-link.is-actived {
+    background-color: #002d5a;
+    border-left: 4px solid #12b3af;
+}
+
+.submenu-link.is-active {
+    color: #12b3af !important;
+    font-weight: bold;
+}
