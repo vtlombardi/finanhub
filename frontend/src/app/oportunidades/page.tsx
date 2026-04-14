@@ -1,201 +1,282 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { OpportunityHero } from '@/components/opportunities/OpportunityHero';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { OpportunitySidebar, OpportunityFilters } from '@/components/opportunities/OpportunitySidebar';
 import { OpportunityCard, Opportunity } from '@/components/opportunities/OpportunityCard';
+import { OpportunityHero } from '@/components/opportunities/OpportunityHero';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { AuthModal } from '@/components/auth/AuthModal';
-import { Grid, List, SortAsc, LayoutGrid, Info, Search, Loader2, AlertCircle } from 'lucide-react';
+import '@/styles/fh-cards.css';
 
-export default function OpportunitiesPage() {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isAiMode, setIsAiMode] = useState(true);
-  const [sortBy, setSortBy] = useState('newest');
-  const [authOpen, setAuthOpen] = useState(false);
-  const [sidebarFilters, setSidebarFilters] = useState<OpportunityFilters>({
-    category: null,
-    subcategory: null,
-    state: null,
-    city: null,
-    minPrice: '',
-    maxPrice: '',
+const MOCK_OPPORTUNITIES: Opportunity[] = [
+  {
+    id: '1',
+    title: 'TechNova Solutions',
+    description: 'Líder em desenvolvimento de software B2B com crescimento de 30% YoY. Empresa consolidada no mercado de tecnologia com alta escalabilidade e base de clientes recorrentes.',
+    category: 'Tecnologia',
+    subcategory: 'Software B2B',
+    location: 'São Paulo, SP',
+    price: 'R$ 5.000.000,00',
+    rating: 4.90,
+    date: 'Publicado há 74 dias',
+    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop',
+    verified: true,
+    status: 'Ativo'
+  },
+  {
+    id: '2',
+    title: 'Clínica Bem-Estar',
+    description: 'Centro médico especializado com 5 anos de operação. Equipamentos de última geração, clientela fiel e localização privilegiada.',
+    category: 'Saúde',
+    subcategory: 'Clínica Médica',
+    location: 'Rio de Janeiro, RJ',
+    price: 'R$ 2.800.000,00',
+    rating: 4.80,
+    date: 'Publicado há 74 dias',
+    image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&auto=format&fit=crop',
     verified: false,
-  });
+    status: 'Ativo'
+  },
+  {
+    id: '3',
+    title: 'CapitalFlow Finanças',
+    description: 'Plataforma de gestão financeira para PMEs com base de clientes em expansão. Modelo SaaS com receita recorrente.',
+    category: 'Finanças',
+    subcategory: 'SaaS',
+    location: 'Belo Horizonte, MG',
+    price: 'R$ 8.500.000,00',
+    rating: 5.00,
+    date: 'Publicado há 74 dias',
+    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop',
+    verified: true,
+    status: 'Ativo'
+  },
+  {
+    id: '4',
+    title: 'Boutique Aurora',
+    description: 'Marca de moda feminina consolidada com loja em shopping de alto padrão. E-commerce ativo e forte presença nas redes sociais.',
+    category: 'Varejo',
+    subcategory: 'Moda',
+    location: 'Porto Alegre, RS',
+    price: 'R$ 1.500.000,00',
+    rating: 4.60,
+    date: 'Publicado há 74 dias',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&auto=format&fit=crop',
+    verified: false,
+    status: 'Ativo'
+  },
+  {
+    id: '5',
+    title: 'EcoLogistics BR',
+    description: 'Operação logística sustentável com frota de veículos elétricos. Contratos de longo prazo com grandes varejistas.',
+    category: 'Logística',
+    subcategory: 'E-commerce',
+    location: 'Curitiba, PR',
+    price: 'R$ 12.000.000,00',
+    rating: 4.75,
+    date: 'Publicado há 12 dias',
+    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop',
+    verified: true,
+    status: 'Ativo'
+  },
+  {
+    id: '6',
+    title: 'SolarGrid Energy',
+    description: 'Instaladora de painéis solares com forte presença no Nordeste. Pipeline de projetos aprovados para os próximos 2 anos.',
+    category: 'Energia',
+    subcategory: 'Renovável',
+    location: 'Recife, PE',
+    price: 'R$ 3.200.000,00',
+    rating: 4.85,
+    date: 'Publicado há 5 dias',
+    image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop',
+    verified: true,
+    status: 'Ativo'
+  }
+];
 
-  const fetchOpportunities = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (sortBy) params.append('sortBy', sortBy);
-      if (sidebarFilters.category) params.append('category', sidebarFilters.category);
-      if (sidebarFilters.subcategory) params.append('subcategory', sidebarFilters.subcategory);
-      if (sidebarFilters.state) params.append('state', sidebarFilters.state);
-      if (sidebarFilters.city) params.append('city', sidebarFilters.city);
-      if (sidebarFilters.minPrice) params.append('minPrice', sidebarFilters.minPrice);
-      if (sidebarFilters.maxPrice) params.append('maxPrice', sidebarFilters.maxPrice);
-      if (sidebarFilters.verified) params.append('verified', 'true');
+function OportunidadesContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [filters, setFilters] = useState<OpportunityFilters | null>(null);
 
-      const response = await fetch(`http://localhost:3000/opportunities?${params.toString()}`);
-      if (!response.ok) throw new Error('Falha ao carregar oportunidades');
-      
-      const result = await response.json();
-      setOpportunities(result.data || []);
-    } catch (err) {
-      console.error('Fetch error:', err);
-      setError('Não foi possível carregar as oportunidades. Tente novamente mais tarde.');
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, sortBy, sidebarFilters]);
-
+  // Inicializar busca a partir da URL (somente no mount)
   useEffect(() => {
-    fetchOpportunities();
-  }, [fetchOpportunities]);
+    const q = searchParams.get('q');
+    if (q && !filters) {
+      setFilters(prev => ({
+        ...(prev || {} as OpportunityFilters),
+        search: q
+      } as OpportunityFilters));
+    }
+  }, []); // Executar apenas uma vez no mount
 
-  const handleSearch = (query: string, ai: boolean) => {
-    setSearchQuery(query);
-    setIsAiMode(ai);
+  const handleFilterChange = (newFilters: OpportunityFilters) => {
+    setFilters(newFilters);
+    
+    // Sincronizar com a URL
+    const params = new URLSearchParams();
+    if (newFilters.search) params.set('q', newFilters.search);
+    if (newFilters.category && newFilters.category !== 'Categoria') params.set('category', newFilters.category);
+    if (newFilters.state) params.set('state', newFilters.state);
+    if (newFilters.city) params.set('city', newFilters.city);
+    if (newFilters.minPrice) params.set('min', newFilters.minPrice);
+    if (newFilters.maxPrice) params.set('max', newFilters.maxPrice);
+    if (newFilters.sort) params.set('sort', newFilters.sort);
+    
+    // Atualizar a URL sem forçar re-render completo ou scroll
+    const newUrl = `/oportunidades?${params.toString()}`;
+    window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
   };
 
-  const handleFilterChange = (filters: OpportunityFilters) => {
-    setSidebarFilters(filters);
-  };
+  const filteredAndSortedOpportunities = useMemo(() => {
+    let result = [...MOCK_OPPORTUNITIES];
 
+    if (filters) {
+      // 1. Busca Inteligente (titulo, descricao, categoria, subcategoria, cidade, estado)
+      if (filters.search) {
+        const query = filters.search.toLowerCase();
+        result = result.filter(opp => 
+          opp.title.toLowerCase().includes(query) ||
+          opp.description.toLowerCase().includes(query) ||
+          opp.category.toLowerCase().includes(query) ||
+          opp.subcategory.toLowerCase().includes(query) ||
+          opp.location.toLowerCase().includes(query)
+        );
+      }
+
+      // 2. Filtros Exatos
+      if (filters.category && filters.category !== 'Categoria' && filters.category !== 'Todas as Categorias') {
+        // Mapeamento simples para match com o mock
+        const catMap: Record<string, string> = {
+            'empresas': 'Tecnologia', // Exemplo simplificado
+            'saude': 'Saúde',
+            'financas': 'Finanças',
+            'varejo': 'Varejo',
+            'logistica': 'Logística',
+            'energia': 'Energia'
+        };
+        const targetCat = catMap[filters.category.toLowerCase()] || filters.category;
+        result = result.filter(opp => opp.category.toLowerCase() === targetCat.toLowerCase());
+      }
+
+      if (filters.state) {
+        result = result.filter(opp => opp.location.includes(filters.state));
+      }
+
+      if (filters.city) {
+        result = result.filter(opp => opp.location.includes(filters.city));
+      }
+
+      // 3. Faixa de Preço
+      const parsePrice = (priceStr: string) => parseFloat(priceStr.replace(/[^\d]/g, '')) || 0;
+      
+      if (filters.minPrice) {
+        result = result.filter(opp => parsePrice(opp.price) >= parseFloat(filters.minPrice));
+      }
+      if (filters.maxPrice) {
+        result = result.filter(opp => parsePrice(opp.price) <= parseFloat(filters.maxPrice));
+      }
+
+      // 4. Qualidade / Verificado
+      if (filters.isVerified) {
+        result = result.filter(opp => opp.verified);
+      }
+
+      // 5. Ordenação
+      if (filters.sort) {
+        switch (filters.sort) {
+          case 'price_asc':
+            result.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
+            break;
+          case 'price_desc':
+            result.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
+            break;
+          case 'verificados_first':
+            result.sort((a, b) => (a.verified === b.verified ? 0 : a.verified ? -1 : 1));
+            break;
+          default:
+            // 'desc' / Mais Recentes
+            break;
+        }
+      }
+    }
+
+    return result;
+  }, [filters]);
 
   return (
-    <>
-      <Header onOpenAuth={() => setAuthOpen(true)} />
-      <main className="bg-[#05080f] min-h-screen">
-        <OpportunityHero onSearch={handleSearch} initialQuery={searchQuery} />
+    <div className="min-h-screen bg-[#020617] pb-20">
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <Header />
+      </div>
 
-        <section className="container mx-auto px-4 py-12">
+      <main className="pt-[68px]">
+        <OpportunityHero />
+
+        <div className="container mx-auto px-4 max-w-[1400px] mt-16">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar */}
-            <div className="lg:w-72 flex-shrink-0">
-               <OpportunitySidebar onFilterChange={handleFilterChange} />
-            </div>
+            <aside className="w-full lg:w-[320px] shrink-0">
+              <OpportunitySidebar onFilterChange={handleFilterChange} initialSearch={searchParams.get('q') || ''} />
+            </aside>
 
-            {/* Results Grid */}
-            <div className="flex-1 space-y-8">
-              {/* Top Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-4 bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-sm">
-                <div className="flex items-center gap-3">
-                    <div className="bg-[#12b3af]/10 text-[#12b3af] px-4 py-1.5 rounded-full text-sm font-bold border border-[#12b3af]/20">
-                    {loading ? 'Buscando...' : `${opportunities.length} ${opportunities.length === 1 ? 'Oportunidade encontrada' : 'Oportunidades encontradas'}`}
-                    </div>
-                    {searchQuery && (
-                        <div className="text-gray-500 text-sm hidden md:block italic">
-                            Resultados para: <span className="text-white font-medium">"{searchQuery}"</span>
-                        </div>
-                    )}
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-10 bg-white/[0.02] border border-white/5 p-6 rounded-2xl backdrop-blur-sm">
+                <div>
+                  <h2 className="text-2xl font-black text-white tracking-tight">
+                    Lista de <span className="text-[#12b3af]">Oportunidades</span>
+                  </h2>
+                  <p className="text-sm text-white/40 mt-1">
+                    Exibindo {filteredAndSortedOpportunities.length} ativos disponíveis para negociação
+                  </p>
                 </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 border-r border-white/10 pr-4 mr-2 hidden md:flex">
-                     <button className="p-2 rounded-lg bg-[#12b3af] text-white transition-all"><LayoutGrid className="w-4 h-4" /></button>
-                     <button className="p-2 rounded-lg text-gray-400 hover:text-white transition-all"><List className="w-4 h-4" /></button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wider hidden sm:inline">Ordenar:</span>
-                    <select 
-                        className="bg-white/5 border border-white/10 text-white rounded-lg px-4 py-2 text-sm outline-none focus:border-[#12b3af]/40 cursor-pointer"
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                    >
-                        <option value="newest" className="bg-[#0a101b]">Recentemente Adicionadas</option>
-                        <option value="verified" className="bg-[#0a101b]">Verificadas Primeiro</option>
-                        <option value="price-high" className="bg-[#0a101b]">Maior Valor</option>
-                        <option value="price-low" className="bg-[#0a101b]">Menor Valor</option>
-                    </select>
+                
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest hidden sm:block">Ordenar por:</span>
+                  <div className="relative group">
+                    <button className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0B1220] px-5 py-2.5 text-xs font-bold text-white/80 hover:text-white hover:border-[#12b3af]/40 transition-all outline-none shadow-xl">
+                      <span>{filters?.sort === 'price_asc' ? 'Menor Preço' : filters?.sort === 'price_desc' ? 'Maior Preço' : 'Mais Recentes'}</span>
+                      <svg width="12" height="12" viewBox="0 0 15 15" fill="none" className="text-[#12b3af]"><path d="M4.18179 6.18181C4.35753 6.00608 4.64245 6.00608 4.81819 6.18181L7.49999 8.86362L10.1818 6.18181C10.3575 6.00608 10.6424 6.00608 10.8182 6.18181C10.9939 6.35755 10.9939 6.64247 10.8182 6.81821L7.81819 9.81821C7.73379 9.9026 7.61934 9.95001 7.49999 9.95001C7.38064 9.95001 7.26618 9.9026 7.18179 9.81821L4.18179 6.81821C4.00605 6.64247 4.00605 6.35755 4.18179 6.18181Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Discovery Engine Suggestion (IA feedback) */}
-              {isAiMode && searchQuery && !loading && (
-                <div className="bg-[#12b3af]/5 border border-[#12b3af]/20 p-6 rounded-2xl flex items-start gap-4 animate-in fade-in zoom-in duration-500">
-                    <div className="bg-[#12b3af] p-3 rounded-xl shadow-[0_0_15px_rgba(18,179,175,0.4)]">
-                        <Info className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="space-y-1">
-                        <h4 className="text-white font-bold text-lg">Insight da IA HAYAI</h4>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            Analisei os resultados para <span className="text-[#12b3af]">"{searchQuery}"</span>. 
-                            Encontrei oportunidades com alto potencial de ROI e modelos de negócio escaláveis. 
-                            Recomendo filtrar por <span className="text-white font-medium italic">"Verificados"</span> para maior segurança institucional.
-                        </p>
-                    </div>
+              {filteredAndSortedOpportunities.length > 0 ? (
+                <div className="fh-cards">
+                  {filteredAndSortedOpportunities.map(opp => (
+                    <OpportunityCard key={opp.id} opportunity={opp} />
+                  ))}
                 </div>
-              )}
-
-              {/* Loading State */}
-              {loading && (
-                  <div className="flex flex-col items-center justify-center py-24 space-y-4">
-                      <Loader2 className="w-12 h-12 text-[#12b3af] animate-spin" />
-                      <p className="text-gray-400 animate-pulse uppercase tracking-[0.2em] text-xs font-bold">Processando base de dados...</p>
-                  </div>
-              )}
-
-              {/* Error State */}
-              {error && !loading && (
-                  <div className="bg-red-500/10 border border-red-500/20 p-8 rounded-2xl text-center space-y-4">
-                      <div className="bg-red-500 w-12 h-12 rounded-full flex items-center justify-center mx-auto shadow-[0_0_15px_rgba(239,68,68,0.4)]">
-                          <AlertCircle className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="space-y-2">
-                          <h4 className="text-white font-bold text-lg">Erro na Conexão</h4>
-                          <p className="text-gray-400 text-sm">{error}</p>
-                      </div>
-                      <button 
-                        onClick={() => fetchOpportunities()}
-                        className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl text-sm font-bold transition-all"
-                      >
-                          Tentar novamente
-                      </button>
-                  </div>
-              )}
-
-              {/* Grid */}
-              {!loading && !error && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
-                    {opportunities.map((opp) => (
-                      <OpportunityCard key={opp.id} opportunity={opp} />
-                    ))}
-                  </div>
-              )}
-
-              {/* Empty State */}
-              {!loading && !error && opportunities.length === 0 && (
-                <div className="text-center py-24 space-y-6">
-                    <div className="bg-white/5 w-20 h-20 rounded-full flex items-center justify-center mx-auto border border-white/10">
-                        <Search className="w-8 h-8 text-gray-600" />
-                    </div>
-                    <div className="space-y-2">
-                        <h3 className="text-2xl font-bold text-white uppercase">Nenhum negócio encontrado</h3>
-                        <p className="text-gray-500 max-w-md mx-auto">Tente ajustar seus filtros ou mude sua busca para encontrar o que procura.</p>
-                    </div>
-                    <button 
-                        onClick={() => { setSearchQuery(''); setSortBy('newest'); fetchOpportunities(); }}
-                        className="text-[#12b3af] font-bold border-b border-[#12b3af] pb-1 hover:text-white hover:border-white transition-all uppercase tracking-widest text-sm"
-                    >
-                        Limpar todos os filtros
-                    </button>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 px-4 rounded-3xl border border-dashed border-white/10 bg-white/5">
+                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-white/20 mb-4"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                   <p className="text-white/40 font-medium">Nenhuma oportunidade encontrada com os filtros atuais.</p>
+                   <button 
+                    onClick={() => {
+                        window.history.pushState({}, '', '/oportunidades');
+                        window.location.reload();
+                    }}
+                    className="mt-4 text-[#12b3af] text-sm font-bold hover:underline"
+                   >
+                     Limpar todos os filtros
+                   </button>
                 </div>
               )}
             </div>
           </div>
-        </section>
+        </div>
       </main>
       <Footer />
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
-    </>
+    </div>
+  );
+}
+
+export default function OportunidadesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#020617] flex items-center justify-center text-white">Carregando...</div>}>
+      <OportunidadesContent />
+    </Suspense>
   );
 }

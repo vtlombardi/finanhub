@@ -195,15 +195,21 @@ export default function EditListingPage() {
                 <div className="panel panel-form">
                   <div className="panel-heading">Informações Básicas</div>
                   <div className="panel-body">
-                    <div className="form-group" style={{ position: 'relative' }}>
+                    <div className="row">
+                       <div className="col-sm-12">
+                          <label>Subtítulo (Complemento do Título)</label>
+                          <input type="text" {...register('subtitle')} className="form-control" placeholder="Ex: Operação consolidada com 15 anos no mercado" />
+                       </div>
+                    </div>
+
+                    <div className="form-group mt-3" style={{ position: 'relative' }}>
                       <label>Categorias</label>
                       <div className="category-tags-container" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', border: '1px solid #ddd', padding: '10px', borderRadius: '4px', minHeight: '45px' }}>
-                         {/* Mock de tags visual */}
-                         <span className="tag-category">Tecnologia <i className="fa fa-times"></i></span>
-                         <span className="tag-category">SaaS <i className="fa fa-times"></i></span>
+                         {/* Mock de tags visual - Em produção isso deve ser dinâmico */}
+                         <span className="tag-category">Venda de Empresas <i className="fa fa-times"></i></span>
                          <button type="button" className="btn btn-primary btn-xs pull-right" style={{ position: 'absolute', right: '15px', top: '35px' }}>Navegar <i className="fa fa-caret-down"></i></button>
                       </div>
-                      <small className="text-muted">Selecione até 20 categorias</small>
+                      <small className="text-muted">Selecione as categorias relacionadas ao negócio</small>
                     </div>
 
                     <div className="row mt-3">
@@ -211,13 +217,15 @@ export default function EditListingPage() {
                           <label>Status</label>
                           <select {...register('status')} className="form-control">
                             <option value="ACTIVE">Ativo</option>
+                            <option value="PENDING_AI_REVIEW">Pendente Revisão</option>
+                            <option value="FLAGGED">Necessita Ajustes</option>
                             <option value="SUSPENDED">Suspenso</option>
                             <option value="DRAFT">Rascunho</option>
                           </select>
                        </div>
                        <div className="col-sm-6">
-                          <label>ID da Empresa</label>
-                          <input type="text" {...register('companyId')} className="form-control" />
+                          <label>Valor do Negócio (Preço Publicado)</label>
+                          <input type="number" step="0.01" {...register('price', { valueAsNumber: true })} className="form-control" placeholder="0.00" />
                        </div>
                     </div>
 
@@ -226,9 +234,15 @@ export default function EditListingPage() {
                       <textarea {...register('description')} className="form-control" rows={3} maxLength={250}></textarea>
                     </div>
 
-                    <div className="form-group mt-3">
-                       <label>Palavras-chave para a busca</label>
-                       <input type="text" {...register('seoKeywords')} className="form-control" placeholder="Separe por vírgulas ou pressione Tab" />
+                    <div className="row mt-3">
+                       <div className="col-sm-6">
+                          <label>Slug (URL Amigável)</label>
+                          <input type="text" {...register('slug')} className="form-control" placeholder="id-do-anuncio-titulo" />
+                       </div>
+                       <div className="col-sm-6">
+                          <label>Palavras-chave SEO</label>
+                          <input type="text" {...register('seoKeywords')} className="form-control" placeholder="venda, ti, curitiba" />
+                       </div>
                     </div>
                   </div>
                 </div>
@@ -236,6 +250,7 @@ export default function EditListingPage() {
                 <div className="panel panel-form">
                    <div className="panel-heading">Informações de Contato</div>
                    <div className="panel-body">
+                      {/* ... existing contact fields ... */}
                       <div className="row">
                         <div className="col-sm-6">
                            <label>E-mail Corporativo</label>
@@ -273,6 +288,84 @@ export default function EditListingPage() {
                             <label>Estado</label>
                             <input type="text" {...register('state')} className="form-control" />
                          </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="panel panel-form">
+                   <div className="panel-heading">Indicadores de Negócio e Aquisição</div>
+                   <div className="panel-body">
+                      <div className="row">
+                        <div className="col-sm-4">
+                           <label>Faturamento Anual (R$)</label>
+                           <input type="number" step="0.01" {...register('annualRevenue', { valueAsNumber: true })} className="form-control" />
+                        </div>
+                        <div className="col-sm-4">
+                           <label>EBITDA (R$)</label>
+                           <input type="number" step="0.01" {...register('ebitda', { valueAsNumber: true })} className="form-control" />
+                        </div>
+                        <div className="col-sm-4">
+                           <label>Margem EBITDA (%)</label>
+                           <input type="number" step="0.01" {...register('ebitdaMargin', { valueAsNumber: true })} className="form-control" />
+                        </div>
+                      </div>
+
+                      <div className="row mt-3">
+                        <div className="col-sm-4">
+                           <label>Ticket Médio (R$)</label>
+                           <input type="number" step="0.01" {...register('avgTicket', { valueAsNumber: true })} className="form-control" />
+                        </div>
+                        <div className="col-sm-4">
+                           <label>Nº de Funcionários</label>
+                           <input type="number" {...register('employeesCount', { valueAsNumber: true })} className="form-control" />
+                        </div>
+                        <div className="col-sm-4">
+                           <label>Tempo de Mercado (Anos)</label>
+                           <input type="number" {...register('marketTime', { valueAsNumber: true })} className="form-control" />
+                        </div>
+                      </div>
+
+                      <hr className="mt-4 mb-4" />
+
+                      <div className="row">
+                        <div className="col-sm-6">
+                           <label>Modelo de Receita</label>
+                           <input type="text" {...register('revenueModel')} className="form-control" placeholder="Ex: Recorrente (SaaS), Venda Direta" />
+                        </div>
+                        <div className="col-sm-6">
+                           <label>Base de Clientes (Qtd)</label>
+                           <input type="number" {...register('clientBaseCount', { valueAsNumber: true })} className="form-control" />
+                        </div>
+                      </div>
+
+                      <div className="form-group mt-3">
+                         <label>Método de Valuation</label>
+                         <input type="text" {...register('valuationMethod')} className="form-control" placeholder="Ex: Múltiplo de EBITDA, Fluxo de Caixa Descontado" />
+                      </div>
+
+                      <div className="form-group mt-3">
+                         <label>Motivo da Venda</label>
+                         <textarea {...register('reasonForSale')} className="form-control" rows={2} placeholder="Descreva brevemente o motivo da saída ou busca por sócio"></textarea>
+                      </div>
+
+                      <div className="form-group mt-3">
+                         <label>Estrutura da Operação</label>
+                         <textarea {...register('operationStructure')} className="form-control" rows={2} placeholder="Ex: Venda de 100% das cotas, Busca de sócio investidor para 30%"></textarea>
+                      </div>
+
+                      <div className="form-group mt-3">
+                         <label>Perfil do Comprador Ideal</label>
+                         <input type="text" {...register('buyerProfile')} className="form-control" placeholder="Ex: Investidor Estratégico, Fundo de Venture Capital" />
+                      </div>
+
+                      <div className="form-group mt-3">
+                         <label>Próximos Passos</label>
+                         <textarea {...register('nextSteps')} className="form-control" rows={2} placeholder="Ex: Assinatura de NDA, Envio de Teaser Detalhado"></textarea>
+                      </div>
+
+                      <div className="form-group mt-3">
+                         <label>Nota de Confidencialidade</label>
+                         <input type="text" {...register('confidentialityNote')} className="form-control" placeholder="Ex: Informações sujeitas a acordo de confidencialidade" />
                       </div>
                    </div>
                 </div>

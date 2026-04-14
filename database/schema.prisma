@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../backend/node_modules/.prisma/client"
 }
 
 datasource db {
@@ -8,12 +9,12 @@ datasource db {
 }
 
 model Tenant {
-  id            String              @id @default(uuid())
-  slug          String              @unique
-  name          String
-  document      String?             @unique
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id               String              @id @default(uuid())
+  slug             String              @unique
+  name             String
+  document         String?             @unique
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
   ads              Ad[]
   aiJobs           AiJob[]
   auditLogs        AuditLog[]
@@ -52,10 +53,10 @@ model User {
   chatMessages            ChatMessage[]
   chatParticipants        ChatParticipant[]
   companyMembers          CompanyMember[]
+  dataRoomRequests        DataRoomRequest[]
   favorites               Favorite[]
   leads                   Lead[]
   listings                Listing[]
-  dataRoomRequests        DataRoomRequest[]
   moderationActions       ModerationAction[] @relation("moderationActions")
   notifications           Notification[]
   proposals               Proposal[]
@@ -72,15 +73,6 @@ model Company {
   tradeName  String?
   document   String?
   isVerified Boolean         @default(false)
-  
-  // Reputação e Índices (Métricas de Confiança)
-  trustScore        Decimal?        @db.Decimal(3, 1) // ex: 9.8
-  responseRate      Int?            @default(0)       // ex: 92 (porcentagem)
-  responseTime      String?                           // ex: "2h"
-  yearsActive       Int?                              // ex: 8
-  dealsCount        Int?            @default(0)       // ex: 12
-  bio               String?                           // ex: "Investidor focado em Tech..."
-
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -133,65 +125,79 @@ model CategoryAttribute {
 }
 
 model Listing {
-  id                String                  @id @default(uuid())
-  tenantId          String
-  companyId         String
-  categoryId        String
-  ownerId           String?
-  owner             User?                   @relation(fields: [ownerId], references: [id])
-  slug              String
-  title             String
-  description       String
-  price             Decimal?                @db.Decimal(15, 2)
-  status            ListingStatus           @default(DRAFT)
-  viewCount         Int                     @default(0)
-  isFeatured        Boolean                 @default(false)
-  featuredUntil     DateTime?
-  featuredPriority  Int                     @default(0)
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  addressLine1      String?
-  addressLine2      String?
-  city              String?
-  ebitda            String?
-  email             String?
-  employeesCount    String?
-  facebookUrl       String?
-  instagramUrl      String?
-  investmentValue   Decimal?                @db.Decimal(15, 2)
-  linkedinUrl       String?
-  logoUrl           String?
-  neighborhood      String?
-  phonePrimary      String?
-  phoneSecondary    String?
-  revenue           String?
-  seoDescription    String?
-  seoKeywords       String?
-  seoTitle          String?
-  state             String?
-  tiktokUrl         String?
-  twitterUrl        String?
-  videoDescription  String?
-  videoUrl          String?
-  websiteUrl        String?
-  zipCode           String?
-  addressReference  String?
-  country           String?
-  aiInsights        AiInsight[]
-  businessHours     BusinessHour[]
-  chatThreads       ChatThread[]
-  dataRoomDocs      DataRoomDocument[]
-  dataRoomRequests  DataRoomRequest[]
-  favorites         Favorite[]
-  leads             Lead[]
-  category          Category                @relation(fields: [categoryId], references: [id])
-  company           Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  tenant            Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  attrValues        ListingAttributeValue[]
-  features          ListingFeature[]
-  media             ListingMedia[]
-  metrics           Metric[]
-  moderationActions ModerationAction[]
+  id                  String                  @id @default(uuid())
+  tenantId            String
+  companyId           String
+  categoryId          String
+  slug                String
+  title               String
+  description         String
+  price               Decimal?                @db.Decimal(15, 2)
+  city                String?
+  state               String?
+  neighborhood        String?
+  addressLine1        String?
+  addressLine2        String?
+  zipCode             String?
+  country             String?
+  addressReference    String?
+  email               String?
+  websiteUrl          String?
+  phonePrimary        String?
+  phoneSecondary      String?
+  facebookUrl         String?
+  instagramUrl        String?
+  twitterUrl          String?
+  linkedinUrl         String?
+  tiktokUrl           String?
+  investmentValue     Decimal?                @db.Decimal(15, 2)
+  seoTitle            String?
+  seoKeywords         String?
+  seoDescription      String?
+  logoUrl             String?
+  videoUrl            String?
+  videoDescription    String?
+  status              ListingStatus           @default(DRAFT)
+  viewCount           Int                     @default(0)
+  isFeatured          Boolean                 @default(false)
+  featuredUntil       DateTime?
+  featuredPriority    Int                     @default(0)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  ownerId             String?
+  isTest              Boolean                 @default(false)
+  seedTag             String?
+  annualRevenue       Decimal?                @db.Decimal(15, 2)
+  avgTicket           Decimal?                @db.Decimal(15, 2)
+  buyerProfile        String?
+  clientBaseCount     Int?
+  confidentialityNote String?
+  ebitdaMargin        Decimal?                @db.Decimal(5, 2)
+  marketTime          Int?
+  nextSteps           String?
+  operationStructure  String?
+  reasonForSale       String?
+  revenueModel        String?
+  subtitle            String?
+  valuationMethod     String?
+  ebitda              Decimal?                @db.Decimal(15, 2)
+  employeesCount      Int?
+  aiInsights          AiInsight[]
+  businessHours       BusinessHour[]
+  chatThreads         ChatThread[]
+  dataRoomDocs        DataRoomDocument[]
+  dataRoomRequests    DataRoomRequest[]
+  favorites           Favorite[]
+  leads               Lead[]
+  category            Category                @relation(fields: [categoryId], references: [id])
+  company             Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  owner               User?                   @relation(fields: [ownerId], references: [id])
+  tenant              Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attrValues          ListingAttributeValue[]
+  features            ListingFeature[]
+  media               ListingMedia[]
+  metrics             Metric[]
+  moderationActions   ModerationAction[]
 
   @@unique([tenantId, slug])
   @@index([tenantId, status, createdAt])
@@ -245,18 +251,7 @@ model Lead {
   tenantId            String
   listingId           String
   investorId          String
-  status              LeadStatus   @default(NEW)
-  
-  // Detalhes do Lead (Capturados no form estratégico)
-  userName            String?
-  userEmail           String?
-  userPhone           String?
-  userCompany         String?
-  objective           String?      // ex: "Demonstração de Interesse", "Solicitação de Análise"
-  investmentRange     String?      // ex: "R$ 500k - R$ 2M"
   message             String
-  mediationAccepted   Boolean      @default(false)
-  
   score               Int?
   intentLevel         IntentLevel?
   aiClassification    String?
@@ -265,6 +260,8 @@ model Lead {
   aiProcessedAt       DateTime?
   aiError             String?
   createdAt           DateTime     @default(now())
+  status              LeadStatus   @default(NEW)
+  internalNotes       String?
   investor            User         @relation(fields: [investorId], references: [id], onDelete: Cascade)
   listing             Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
   tenant              Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -272,16 +269,6 @@ model Lead {
 
   @@index([tenantId, investorId])
   @@index([listingId])
-}
-
-enum LeadStatus {
-  NEW
-  UNDER_REVIEW
-  QUALIFIED
-  CONTACTED
-  PROPOSAL_SENT
-  WON
-  LOST
 }
 
 model Proposal {
@@ -412,9 +399,9 @@ model Subscription {
   externalId    String?
   lastPaymentAt DateTime?
   nextBillingAt DateTime?
-  creditBalance Decimal   @default(0) @db.Decimal(15, 2)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  creditBalance Decimal   @default(0) @db.Decimal(15, 2)
   plan          Plan      @relation(fields: [planId], references: [id])
   tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
@@ -449,18 +436,18 @@ model AiJob {
 }
 
 model Ad {
-  id        String      @id @default(uuid())
+  id        String     @id @default(uuid())
   tenantId  String?
   title     String
   imageUrl  String?
   linkUrl   String
   position  AdPosition
-  isActive  Boolean     @default(true)
-  startsAt  DateTime    @default(now())
+  isActive  Boolean    @default(true)
+  startsAt  DateTime   @default(now())
   endsAt    DateTime?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  tenant    Tenant?     @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  tenant    Tenant?    @relation(fields: [tenantId], references: [id])
 
   @@index([position, isActive, startsAt])
 }
@@ -501,61 +488,6 @@ model DailyMetric {
   @@unique([tenantId, date, type])
 }
 
-enum Role {
-  USER
-  ADMIN
-  OWNER
-}
-
-enum ListingStatus {
-  DRAFT
-  PENDING_AI_REVIEW
-  ACTIVE
-  INACTIVE
-  FLAGGED
-  SUSPENDED
-  CLOSED
-}
-
-enum ProposalStatus {
-  OPEN
-  ACCEPTED
-  REJECTED
-  COUNTER_OFFER
-  WITHDRAWN
-}
-
-enum PlanTier {
-  BASE
-  PROFESSIONAL
-  ELITE
-}
-
-enum AdPosition {
-  LEADERBOARD
-  MOBILE_BANNER
-  SIDEBAR
-}
-
-enum AiJobStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-}
-
-enum IntentLevel {
-  LOW
-  MEDIUM
-  HIGH
-}
-
-enum DataRoomStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 model DataRoomDocument {
   id        String   @id @default(uuid())
   tenantId  String
@@ -585,4 +517,77 @@ model DataRoomRequest {
 
   @@unique([listingId, investorId])
   @@index([tenantId, status])
+}
+
+enum LeadStatus {
+  NEW
+  UNDER_REVIEW
+  IN_CONTACT
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+enum Role {
+  USER
+  ADMIN
+  OWNER
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_AI_REVIEW
+  ACTIVE
+  INACTIVE
+  FLAGGED
+  SUSPENDED
+  CLOSED
+}
+
+enum ProposalStatus {
+  OPEN
+  ACCEPTED
+  REJECTED
+  COUNTER_OFFER
+  WITHDRAWN
+}
+
+enum PlanTier {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+  ESSENTIAL
+  PREMIUM
+  BUSINESS
+  CORPORATE_ELITE
+  BASE
+  PROFESSIONAL
+  ELITE
+}
+
+enum AdPosition {
+  LEADERBOARD
+  MOBILE_BANNER
+  SIDEBAR
+}
+
+enum AiJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum IntentLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DataRoomStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

@@ -8,6 +8,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
+    "seed": "node seedListings.js",
+    "clear-seed": "node clearSeedListings.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "prisma": {

@@ -29,7 +29,18 @@ export class SubscriptionGuard implements CanActivate {
 
     // 1. Verificar por Tier mínimo
     if (requiredTier) {
-      const tiers = [PlanTier.BASE, PlanTier.PROFESSIONAL, PlanTier.ELITE];
+      const tiers: PlanTier[] = [
+        PlanTier.FREE,
+        PlanTier.BASIC,
+        PlanTier.BASE,
+        PlanTier.ESSENTIAL,
+        PlanTier.PROFESSIONAL,
+        PlanTier.PREMIUM,
+        PlanTier.BUSINESS,
+        PlanTier.ELITE,
+        PlanTier.ENTERPRISE,
+        PlanTier.CORPORATE_ELITE
+      ];
       const userTierIndex = tiers.indexOf(usage.plan.tier as PlanTier);
       const requiredTierIndex = tiers.indexOf(requiredTier);
 

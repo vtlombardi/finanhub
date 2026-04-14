@@ -10,6 +10,8 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { CryptoService } from '../auth/crypto.service';
 import { MailService } from '../mail/mail.service';
 import { InviteMemberDto, UpdateUserDto, CreateUserDto } from './dto/create-users.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -169,6 +171,55 @@ export class UsersService {
 
     await this.prisma.user.delete({ where: { id: targetId } });
     return { message: 'Membro removido com sucesso.' };
+  }
+
+  async updateProfile(userId: string, tenantId: string, dto: UpdateProfileDto) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId },
+    });
+
+    if (!user) throw new NotFoundException('Usuário não encontrado.');
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: dto.name,
+        // email: dto.email, // E-mail update might require verification flow, kept simple for now
+        // avatar: dto.avatar, // Avatar support can be added if storage is ready
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+      },
+    });
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) throw new NotFoundException('Usuário não encontrado.');
+
+    const isMatch = await this.cryptoService.comparePassword(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!isMatch) {
+      throw new BadRequestException('A senha atual fornecida está incorreta.');
+    }
+
+    const newPasswordHash = await this.cryptoService.hashPassword(dto.newPassword);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash },
+    });
+
+    return { message: 'Senha alterada com sucesso.' };
   }
 
   // Regras de atribuição de cargo:

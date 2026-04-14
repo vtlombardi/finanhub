@@ -133,7 +133,7 @@ export class MailService {
           </div>
 
           <p style="font-size: 14px; color: #64748b; line-height: 1.6;">
-            Este código expira em 15 minutos. Se você não solicitou a redefinição de senha, ignore este e-mail — sua senha permanece inalterada.
+            Este código expira em 15 minutos. Se você não solicitou a redefinirção de senha, ignore este e-mail — sua senha permanece inalterada.
           </p>
 
           <hr style="margin: 32px 0; border: 0; border-top: 1px solid #e2e8f0;" />
@@ -157,6 +157,66 @@ export class MailService {
     } catch (error) {
       this.logger.error(`Falha ao enviar e-mail de reset para ${email}:`, error);
       if (process.env.NODE_ENV === 'production') throw error;
+    }
+  }
+
+  async sendNewLeadNotification(email: string, lead: any) {
+    const listingTitle = lead.listing?.title || 'Seu Anúncio';
+    const investorName = lead.investor?.fullName || 'Um Investidor';
+    const leadMessage = lead.message || 'Manifestação de interesse recebida.';
+    
+    // Link para o painel de leads (ajustar conforme slug/url real)
+    const dashboardLink = `${process.env.FRONTEND_URL || 'http://localhost:3001'}/dashboard/leads`;
+
+    const html = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
+        <div style="background: #020617; padding: 40px; text-align: center; border-radius: 16px 16px 0 0;">
+          <h1 style="color: #12b3af; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.025em;">FINANHUB</h1>
+          <p style="color: #64748b; margin-top: 8px; font-size: 14px; text-transform: uppercase; tracking: 0.1em;">Business Intelligence Hub</p>
+        </div>
+
+        <div style="padding: 40px; background: #ffffff; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 16px 16px;">
+          <h2 style="font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 24px;">Novo Lead Recebido</h2>
+          
+          <p style="line-height: 1.6; color: #475569;">
+            Você recebeu uma nova manifestação de interesse para a oportunidade: <br/>
+            <strong style="color: #0f172a; font-size: 18px;">${listingTitle}</strong>
+          </p>
+
+          <div style="margin: 32px 0; padding: 24px; background: #f8fafc; border-radius: 12px; border-left: 4px solid #12b3af;">
+            <p style="margin: 0; font-size: 13px; font-weight: 600; color: #12b3af; text-transform: uppercase;">Mensagem do Investidor</p>
+            <p style="margin: 12px 0 0; font-style: italic; color: #334155; line-height: 1.5;">"${leadMessage}"</p>
+          </div>
+
+          <div style="text-align: center; margin: 40px 0;">
+            <a href="${dashboardLink}" style="background: #0f172a; color: #12b3af; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 15px; border: 1px solid #12b3af; display: inline-block;">
+              VER DETALHES NO PAINEL
+            </a>
+          </div>
+
+          <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; text-align: center;">
+            A equipe Finanhub está acompanhando esta solicitação para garantir a agilidade no processo de intermediação.
+          </p>
+
+          <hr style="margin: 40px 0; border: 0; border-top: 1px solid #f1f5f9;" />
+
+          <p style="font-size: 11px; color: #cbd5e1; text-align: center; text-transform: uppercase; letter-spacing: 0.05em;">
+            FINANHUB • PLATAFORMA DE INTERMEDIAÇÃO ESTRATÉGICA
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await this.transporter.sendMail({
+        from: `"Finanhub Leads" <${process.env.MAIL_FROM || 'leads@finanhub.com.br'}>`,
+        to: email,
+        subject: `Novo Lead: ${listingTitle}`,
+        html,
+      });
+      this.logger.log(`E-mail de notificação de lead enviado para ${email}`);
+    } catch (error) {
+      this.logger.error(`Falha ao enviar e-mail de lead para ${email}:`, error);
     }
   }
 }

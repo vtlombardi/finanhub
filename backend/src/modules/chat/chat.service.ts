@@ -105,15 +105,33 @@ export class ChatService {
 
   /**
    * Cria uma nova thread (ex: suporte ou interesse em anúncio).
+   * Verifica se já existe conversa ativa para o anúncio e usuário.
    */
   async createThread(userId: string, tenantId: string, targetAdminId?: string, listingId?: string) {
-    // Busca um Admin padrão se não houver um ID específico (ou o OWNER do tenant)
+    // 1. Verificar se já existe uma thread para este usuário e anúncio
+    if (listingId) {
+      const existingThread = await this.prisma.chatThread.findFirst({
+        where: {
+          listingId,
+          participants: {
+            some: { userId: userId }
+          }
+        }
+      });
+
+      if (existingThread) {
+        return existingThread;
+      }
+    }
+
+    // 2. Busca um Admin padrão se não houver um ID específico (ou o OWNER do tenant)
     const admin = targetAdminId 
       ? { id: targetAdminId } 
       : await this.prisma.user.findFirst({ where: { tenantId, role: 'OWNER' } });
 
     if (!admin) throw new NotFoundException('Administrador de destino não encontrado.');
 
+    // 3. Criar a thread se for nova
     return this.prisma.chatThread.create({
       data: {
         tenantId,

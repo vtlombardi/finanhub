@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { MapPin, Star, Calendar, CheckCircle, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
 export interface Opportunity {
   id: string;
   title: string;
+  description: string;
   category: string;
   subcategory: string;
   location: string;
@@ -24,75 +24,67 @@ interface OpportunityCardProps {
 
 export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity }) => {
   return (
-    <div className="group relative flex flex-col bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:border-[#12b3af]/40 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(18,179,175,0.1)]">
-      {/* Image Container */}
-      <div className="relative h-56 overflow-hidden">
-        <img 
-          src={opportunity.image} 
-          alt={opportunity.title} 
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
+    <Link href={`/oportunidades/${opportunity.id}`} className="card">
+      {/* 1. Imagem com hover zoom */}
+      <div className="image-container">
+        <img src={opportunity.image} alt={opportunity.title} />
+        <div className="image-overlay" />
         
-        {/* Badges Overlay */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
-          <span className="bg-[#12b3af] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
-            {opportunity.status}
+        {/* Badges do Topo */}
+        <div className="badges-container">
+          {/* 2. Badge categoria */}
+          <span className="badge-left">
+            {typeof opportunity.category === 'object' ? (opportunity.category as any).name : opportunity.category}
           </span>
+          
+          <div className="badge-right">
+            {/* 3. Badge NOVO (Amarelo) - Simulado com base na data se necessário, mas fixo aqui por design */}
+            <span className="badge-new">NOVO</span>
+            {/* 4. Badge ATIVO (Cinza) */}
+            <span className="badge-status">{opportunity.status}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="content">
+        {/* 5. Título com hover */}
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="group-hover:text-[#00b8b2] transition-colors">{opportunity.title}</h3>
           {opportunity.verified && (
-            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[10px] font-medium px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
-               <CheckCircle className="w-3 h-3 text-[#12b3af]" />
-               Verificado <span className="text-[#12b3af] ml-0.5">FH</span>
-            </div>
+            <svg className="text-[#00b8b2]" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-4-4 1.41-1.41L11 14.17l7.59-7.59L20 8l-9 9z"></path></svg>
           )}
         </div>
-
-        {/* Category Overlay */}
-        <div className="absolute bottom-4 left-4">
-           <span className="bg-black/60 backdrop-blur-md border border-white/10 text-gray-300 text-[10px] font-medium px-3 py-1 rounded-full uppercase tracking-widest">
-            {opportunity.category}
-          </span>
+        
+        {/* 6. Descrição curta */}
+        <p className="description opacity-60 text-xs leading-relaxed line-clamp-2 mb-4">
+          {opportunity.description}
+        </p>
+        
+        {/* 7 & 8. Valor do Ativo destacado */}
+        <div className="value-container group-hover:bg-[#00b8b2]/5 transition-all">
+          <span className="value-label text-[#00b8b2]">Valor do Ativo</span>
+          <span className="value-amount">{opportunity.price}</span>
         </div>
+
+        {/* 9. Metadados Adicionais */}
+        <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+          <div className="location-container !mb-0">
+            <svg className="location-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <span className="text-[10px]">
+              {typeof opportunity.location === 'object' ? (opportunity.location as any).name : opportunity.location}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 grayscale opacity-40">
+             <span className="text-[10px] lowercase font-medium">{(opportunity.rating || 0).toFixed(2)}</span>
+             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path></svg>
+          </div>
+        </div>
+        
+        {/* 10. Botão CTA */}
+        <button className="mt-5 w-full bg-[#00b8b2] text-black py-3 rounded-xl font-bold text-xs hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-[#00b8b2]/10">
+          Detalhes do Negócio
+        </button>
       </div>
-
-      {/* Content */}
-      <div className="flex-1 p-6 space-y-4">
-         <div className="space-y-1">
-            <div className="text-[10px] text-gray-500 uppercase tracking-[2px] font-bold">Ref: #{opportunity.id}</div>
-            <h3 className="text-xl font-bold text-white leading-tight group-hover:text-[#12b3af] transition-colors line-clamp-2">
-                {opportunity.title}
-            </h3>
-         </div>
-
-         <div className="flex flex-wrap gap-4 text-xs text-gray-400">
-            <div className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#12b3af]" />
-                {opportunity.location}
-            </div>
-            <div className="flex items-center gap-1.5">
-                <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                {opportunity.rating.toFixed(1)} / 5.0
-            </div>
-            <div className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-gray-500" />
-                {opportunity.date}
-            </div>
-         </div>
-
-         <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-            <div className="flex flex-col">
-                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Valor do Negócio</span>
-                <span className="text-lg font-extrabold text-[#12b3af]">{opportunity.price}</span>
-            </div>
-            
-            <Link 
-                href={`/oportunidades/${opportunity.id}`}
-                className="flex items-center gap-2 bg-white/5 hover:bg-[#12b3af] text-white p-3 rounded-xl transition-all duration-300 transform group-hover:-translate-y-1"
-            >
-                <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Ver Oportunidade</span>
-                <ArrowUpRight className="w-4 h-4" />
-            </Link>
-         </div>
-      </div>
-    </div>
+    </Link>
   );
 };

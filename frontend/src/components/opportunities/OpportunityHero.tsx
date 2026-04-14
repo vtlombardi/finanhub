@@ -1,95 +1,113 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-interface OpportunityHeroProps {
-  onSearch: (query: string, isAi: boolean) => void;
-  initialQuery?: string;
-}
+export function OpportunityHero() {
+  const [aiMode, setAiMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [locationQuery, setLocationQuery] = useState('');
+  const router = useRouter();
 
-export const OpportunityHero: React.FC<OpportunityHeroProps> = ({ onSearch, initialQuery = '' }) => {
-  const [query, setQuery] = useState(initialQuery);
-  const [isAi, setIsAi] = useState(true);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(query, isAi);
+    const params = new URLSearchParams();
+    
+    // Combinar termos de busca e localização para o parâmetro 'q' conforme solicitado
+    const combinedQuery = [searchQuery, locationQuery].filter(Boolean).join(' ');
+    
+    if (combinedQuery) {
+      params.set('q', combinedQuery);
+    }
+
+    router.push(`/oportunidades?${params.toString()}`);
   };
 
-  const suggestions = [
-    'Compra e Venda de Empresas',
-    'Investimentos',
-    'Franquias',
-    'Projetos e Startups',
-    'Imóveis para Negócios'
-  ];
-
   return (
-    <section className="relative overflow-hidden pt-16 pb-24 bg-[#0a101b]">
-      {/* Background patterns */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#12b3af]/10 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#12b3af]/5 blur-[100px] rounded-full -translate-x-1/4 translate-y-1/4"></div>
+    <section className="finanhub-hero-widget !p-0 overflow-hidden relative min-h-[650px]">
+      {/* Background Layer (Video or Static fallback) */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          className="w-full h-full object-cover opacity-40 brightness-[0.7]"
+          poster="https://finanhub.com.br/assets/images/hero-bg-poster.jpg"
+        >
+          <source src="https://finanhub.com.br/assets/video/hero-bg.mp4" type="video/mp4" />
+        </video>
+        {/* Overlay do Design System */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/20 to-[#020617]"></div>
       </div>
+      
+      {/* Content Container - Centralização Absoluta */}
+      <div className="finanhub-container relative z-10 flex flex-col items-center justify-center text-center">
+        <div className="finanhub-content w-full flex flex-col items-center">
+          {/* Título Institucional */}
+          <h1 className="!mb-6 !text-5xl lg:!text-6xl !font-black tracking-tight drop-shadow-2xl">
+            NEGÓCIOS <span className="highlight">SÉRIOS</span> SE ENCONTRAM
+          </h1>
+          
+          {/* Subtítulo Premium */}
+          <p className="!mb-12 !max-w-[750px] !text-lg lg:!text-xl !font-light opacity-80 leading-relaxed drop-shadow-lg">
+            A maior e mais qualificada rede de M&A do Brasil. Conectamos ativos premium a investidores que buscam resultados excepcionais.
+          </p>
 
-      <div className="container relative z-10 mx-auto px-4">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight uppercase">
-              Onde negócios <span className="text-[#12b3af]">sérios</span> se encontram
-            </h1>
-            <p className="text-gray-400 text-lg md:text-xl font-light max-w-2xl mx-auto">
-              Explore oportunidades verificadas, refine sua busca com inteligência e encontre negócios alinhados ao seu perfil de investimento.
-            </p>
-          </div>
+          {/* Barra de Busca (Padrão Institucional) */}
+          <div className="search-wrapper !mt-0 !bg-white/10 !backdrop-blur-xl !border-white/20 !w-full !max-w-[950px] !p-6 !rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+            {/* IA Toggle Switch */}
+            <div className="ai-mode-toggle !mb-6 !justify-center flex items-center gap-3">
+              <span className="ai-mode-toggle-icon">
+                <img 
+                  src="https://finanhub.com.br/assets/images/icon-ai.svg" 
+                  alt="IA" 
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} 
+                  className="w-[20px] h-[20px]"
+                />
+              </span>
+              <span className="ai-mode-toggle-text !text-[12px] !font-bold uppercase tracking-widest text-[#00b8b2]">Busca auxiliada por IA</span>
+              <div 
+                className={`switch-button w-10 h-5 bg-white/10 rounded-full relative cursor-pointer border border-white/10 ${!aiMode ? 'is-disable' : 'bg-[#00b8b2]/20'}`} 
+                onClick={() => setAiMode(!aiMode)}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-[14px] h-[14px] bg-white rounded-full transition-all duration-300 ${aiMode ? 'translate-x-[20px] bg-[#00b8b2]' : 'translate-x-0'}`}></span>
+              </div>
+            </div>
 
-          <form onSubmit={handleSubmit} className="relative group">
-            <div className="relative flex items-center bg-white/5 border border-white/10 p-2 rounded-2xl backdrop-blur-md shadow-2xl transition-all duration-300 group-focus-within:border-[#12b3af]/50 group-focus-within:bg-white/10">
-              <div className="flex-1 flex items-center px-4">
-                <Search className="w-5 h-5 text-gray-500 mr-3" />
-                <input
-                  type="text"
-                  placeholder="Buscar por oportunidades, setores ou palavras-chave..."
-                  className="w-full bg-transparent border-none outline-none text-white placeholder:text-gray-500 py-4 text-lg"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+            {/* Form Pill */}
+            <form onSubmit={handleSearch} className={`content-form !bg-white !rounded-full !flex !items-center !p-1 !w-full shadow-inner ${aiMode ? 'ai-mode border-2 border-[#00b8b2]/20' : 'normal-mode'}`}>
+              <div className="input-group !flex-1 !flex !items-center !px-6 border-r border-gray-100">
+                <i className="fa fa-search text-gray-400 mr-3"></i>
+                <input 
+                  type="text" 
+                  className="!w-full !bg-transparent !py-4 !text-sm !text-black outline-none placeholder:text-gray-400" 
+                  placeholder="Buscar por setores, palavras-chave ou faturamento..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               
-              <div className="flex items-center gap-2 pr-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAi(!isAi)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isAi ? 'bg-[#12b3af]/20 text-[#12b3af] border border-[#12b3af]/30' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span className="text-sm font-semibold">IA</span>
-                </button>
-                <button 
-                  type="submit"
-                  className="bg-[#12b3af] hover:bg-[#0f9895] text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95"
-                >
+              <div className="input-group !flex-[0.6] !flex !items-center !px-6">
+                <i className="fa fa-map-marker text-gray-400 mr-3"></i>
+                <input 
+                  type="text" 
+                  className="!w-full !bg-transparent !py-4 !text-sm !text-black outline-none placeholder:text-gray-400" 
+                  placeholder="Localização..." 
+                  value={locationQuery}
+                  onChange={(e) => setLocationQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="input-group-action ml-auto !p-1">
+                <button type="submit" className="bg-[#00b8b2] text-black font-bold py-4 px-12 rounded-full hover:brightness-110 active:scale-[0.98] transition-all text-sm uppercase tracking-widest shadow-lg">
                   Buscar
                 </button>
               </div>
-            </div>
-          </form>
-
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            <span className="text-xs text-gray-500 uppercase tracking-widest block w-full mb-2">Sugestões rápidas</span>
-            {suggestions.map((s) => (
-              <button
-                key={s}
-                onClick={() => { setQuery(s); onSearch(s, isAi); }}
-                className="text-xs font-medium px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-[#12b3af]/40 hover:bg-[#12b3af]/5 transition-all"
-              >
-                {s}
-              </button>
-            ))}
+            </form>
           </div>
         </div>
       </div>
     </section>
   );
-};
+}

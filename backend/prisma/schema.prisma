@@ -132,6 +132,7 @@ model Listing {
   owner             User?                   @relation(fields: [ownerId], references: [id])
   slug              String
   title             String
+  subtitle          String?
   description       String
   price             Decimal?                @db.Decimal(15, 2)
   status            ListingStatus           @default(DRAFT)
@@ -144,30 +145,49 @@ model Listing {
   addressLine1      String?
   addressLine2      String?
   city              String?
-  ebitda            String?
-  email             String?
-  employeesCount    String?
-  facebookUrl       String?
-  instagramUrl      String?
-  investmentValue   Decimal?                @db.Decimal(15, 2)
-  linkedinUrl       String?
-  logoUrl           String?
-  neighborhood      String?
-  phonePrimary      String?
-  phoneSecondary    String?
-  revenue           String?
-  seoDescription    String?
-  seoKeywords       String?
-  seoTitle          String?
   state             String?
-  tiktokUrl         String?
-  twitterUrl        String?
-  videoDescription  String?
-  videoUrl          String?
-  websiteUrl        String?
+  neighborhood      String?
   zipCode           String?
   addressReference  String?
   country           String?
+  
+  // Financeiro e Métricas
+  annualRevenue     Decimal?                @db.Decimal(15, 2)
+  ebitda            Decimal?                @db.Decimal(15, 2)
+  ebitdaMargin      Decimal?                @db.Decimal(5, 2)
+  avgTicket         Decimal?                @db.Decimal(15, 2)
+  investmentValue   Decimal?                @db.Decimal(15, 2)
+  
+  // Operacional e Negócio
+  employeesCount    Int?
+  marketTime        Int?
+  clientBaseCount   Int?
+  revenueModel      String?
+  valuationMethod   String?
+  reasonForSale     String?
+  operationStructure String?
+  buyerProfile      String?
+  nextSteps         String?
+  confidentialityNote String?
+
+  // Contato e SEO
+  email             String?
+  phonePrimary      String?
+  phoneSecondary    String?
+  websiteUrl        String?
+  facebookUrl       String?
+  instagramUrl      String?
+  linkedinUrl       String?
+  twitterUrl        String?
+  tiktokUrl         String?
+  logoUrl           String?
+  videoUrl          String?
+  videoDescription  String?
+  seoTitle          String?
+  seoDescription    String?
+  seoKeywords       String?
+
+  // Relações
   aiInsights        AiInsight[]
   businessHours     BusinessHour[]
   chatThreads       ChatThread[]
@@ -245,6 +265,8 @@ model Lead {
   aiProcessedAt       DateTime?
   aiError             String?
   createdAt           DateTime     @default(now())
+  status              LeadStatus   @default(NEW)
+  internalNotes       String?
   investor            User         @relation(fields: [investorId], references: [id], onDelete: Cascade)
   listing             Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
   tenant              Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -499,6 +521,14 @@ enum PlanTier {
   BASE
   PROFESSIONAL
   ELITE
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+  ESSENTIAL
+  PREMIUM
+  BUSINESS
+  CORPORATE_ELITE
 }
 
 enum AdPosition {
@@ -518,6 +548,16 @@ enum IntentLevel {
   LOW
   MEDIUM
   HIGH
+}
+
+enum LeadStatus {
+  NEW
+  UNDER_REVIEW
+  IN_CONTACT
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
 }
 
 enum DataRoomStatus {

@@ -1,0 +1,266 @@
+/* ISOLAMENTO TOTAL DOS CARDS DE ANÚNCIOS */
+
+.fh-cards {
+  all: initial; /* Neutraliza heranças globais na raiz */
+  display: block;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.fh-cards * {
+  all: unset; /* Neutraliza heranças filtrando tudo */
+  box-sizing: border-box;
+  font-family: inherit;
+  display: block;
+}
+
+/* --- GRID OBRIGATÓRIO (PASSO 7) --- */
+.fh-cards {
+  display: grid !important;
+  gap: 1.5rem !important; /* gap-6 */
+  width: 100% !important;
+}
+
+/* MOBILE: 1 Coluna (Default) */
+@media (max-width: 767px) {
+  .fh-cards {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* TABLET: 2 Colunas */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .fh-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* DESKTOP (Large Screens): 2 Colunas Fixas para acompanhar Sidebar */
+@media (min-width: 1024px) {
+  .fh-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 2rem !important;
+  }
+}
+
+/* --- ESTRUTURA DO CARD --- */
+.fh-cards .card {
+  background-color: #0b1220 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 1.25rem !important; /* rounded-2xl */
+  overflow: hidden !important;
+  transition: all 0.5s ease !important;
+  cursor: pointer !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Elevando o card no hover */
+.fh-cards .card:hover {
+  transform: translateY(-8px) !important;
+  border-color: rgba(18, 179, 175, 0.4) !important;
+  box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* --- IMAGEM E ZOOM --- */
+.fh-cards .image-container {
+  position: relative !important;
+  aspect-ratio: 16 / 10 !important; /* Visual mais equilibrado */
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+.fh-cards .image-container img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  transition: transform 0.7s ease !important;
+}
+
+.fh-cards .card:hover .image-container img {
+  transform: scale(1.05) !important;
+}
+
+/* Overlay gradiente sobre a imagem */
+.fh-cards .image-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  background: linear-gradient(to top, #0b1220, transparent) !important;
+  opacity: 0.7 !important;
+  pointer-events: none !important;
+}
+
+/* --- BADGES (PASSO 5.2, 5.3, 5.4) --- */
+.fh-cards .badges-container {
+  position: absolute !important;
+  top: 1rem !important;
+  left: 1rem !important;
+  right: 1rem !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  pointer-events: none !important;
+}
+
+.fh-cards .badge-left {
+  background-color: #00b8b2 !important;
+  color: white !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 0.375rem !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  display: inline-block !important;
+}
+
+.fh-cards .badge-right {
+  display: flex !important;
+  gap: 0.5rem !important;
+}
+
+.fh-cards .badge-new {
+  background-color: #ffc20e !important; /* Amarelo (Passo 5.3) */
+  color: black !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 9999px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  display: inline-block !important;
+}
+
+.fh-cards .badge-status {
+  background-color: rgba(62, 69, 94, 0.8) !important; /* Cinza (Passo 5.4) */
+  color: rgba(255, 255, 255, 0.9) !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 9999px !important;
+  font-size: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  display: inline-block !important;
+}
+
+/* --- CONTEÚDO --- */
+.fh-cards .content {
+  padding: 1.5rem !important; /* Reduzido de 1.75rem para maior densidade */
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+}
+
+/* TÍTULO (PASSO 5.5 & 6) */
+.fh-cards h3 {
+  color: white !important;
+  font-size: 1.15rem !important; /* Ajuste leve para densidade */
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  margin-bottom: 0.5rem !important; /* Reduzido de 0.75rem */
+  transition: color 0.3s !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 1 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.fh-cards .card:hover h3 {
+  color: #00b8b2 !important;
+}
+
+/* DESCRIÇÃO (PASSO 5.6) */
+.fh-cards .description {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 0.875rem !important; /* text-sm */
+  line-height: 1.5 !important;
+  margin-bottom: 1.25rem !important;
+  flex: 1 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important; /* Exatamente 3 linhas */
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-align: justify !important; /* Alinhamento elegante */
+}
+
+/* VALOR DO ATIVO (PASSO 5.7 & 5.8) */
+.fh-cards .value-container {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.75rem 1rem !important; /* Padding equilibrado */
+  margin-bottom: 1.25rem !important;
+  transition: all 0.3s !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important; /* Centralização total */
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.fh-cards .card:hover .value-container {
+  background-color: rgba(18, 179, 175, 0.05) !important;
+  border-color: rgba(18, 179, 175, 0.2) !important;
+}
+
+.fh-cards .value-label {
+  color: #00b8b2 !important;
+  font-size: 0.75rem !important; /* text-xs */
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  margin-bottom: 0.25rem !important;
+  display: block !important;
+}
+
+.fh-cards .value-amount {
+  color: white !important;
+  font-size: clamp(14px, 1.8vw, 24px) !important; /* Adaptativo dinâmico para garantir visibilidade total */
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+}
+
+/* LOCALIZAÇÃO (PASSO 5.9) */
+.fh-cards .location-container {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  margin-bottom: 1.25rem !important; /* Reduzido de 1.5rem */
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.fh-cards .location-icon {
+  color: #00b8b2 !important;
+  flex-shrink: 0 !important;
+}
+
+/* BOTÃO CTA (PASSO 5.10 & 6) */
+.fh-cards button {
+  width: 100% !important;
+  background-color: #00b8b2 !important;
+  color: black !important;
+  text-align: center !important;
+  padding: 1rem 0 !important;
+  border-radius: 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  transition: all 0.3s !important;
+  box-shadow: 0 4px 15px rgba(18, 179, 175, 0.3) !important;
+  cursor: pointer !important;
+  display: block !important;
+}
+
+.fh-cards button:hover {
+  background-color: #0f9895 !important;
+  box-shadow: 0 8px 25px rgba(18, 179, 175, 0.4) !important;
+  transform: scale(1.02) !important;
+}
+
+.fh-cards button:active {
+  transform: scale(0.98) !important;
+}

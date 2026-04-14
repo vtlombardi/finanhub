@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* RESET MINIMO CONTROLADO */
+html, body {
+  background: #000;
+  color: white;
+}
+
 :root {
   --brand-base: #000;
   --brand-dark: #000;
@@ -7,13 +13,13 @@
   --brand-transp-50: rgba(0,0,0,0.5);
   --brand-transp-40: rgba(0,0,0,0.6);
   --brand-transp-20: rgba(0,0,0,0.8);
-  --highlight-base: #12b3af;
-  --highlight-dark: #0f9895;
-  --highlight-dark-2: #0d7d7b;
-  --highlight-light: #36bebb;
-  --highlight-light-2: #59cac7;
-  --highlight-transp-10: rgba(18,179,175,0.1);
-  --highlight-transp-50: rgba(18,179,175,0.5);
+  --highlight-base: #00b8b2;
+  --highlight-dark: #00a19c;
+  --highlight-dark-2: #008a85;
+  --highlight-light: #16ddd5;
+  --highlight-light-2: #4dd6d0;
+  --highlight-transp-10: rgba(0, 184, 178, 0.1);
+  --highlight-transp-50: rgba(0, 184, 178, 0.5);
   --color-base: #3e455e;
   --neutral-base: #3e455e;
   --neutral-transp-80: rgba(62,69,94,0.8);
@@ -104,10 +110,12 @@ img { max-width: 100%; display: block; }
    HEADER
 ────────────────────────────────────────── */
 .header {
-  background: #000;
+  background: rgba(2, 6, 23, 0.8) !important; /* #020617 with alpha */
   position: sticky;
   top: 0;
   z-index: 1000;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
 .header .header-content .container { padding: 0 20px; }
@@ -940,5 +948,54 @@ img { max-width: 100%; display: block; }
 @media (max-width: 580px) {
   .categories-base[data-type="2"] .categories-content > .categories-list {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ── LOGIN PAGE HEADING OVERRIDES ── */
+.login-h1,
+h1.login-h1 {
+  font-weight: 400 !important;
+  font-family: 'Poppins', sans-serif !important;
+  letter-spacing: -0.04em !important;
+  font-size: 1.7rem !important;
+  line-height: 1.15 !important;
+}
+
+@media (max-width: 768px) {
+  .login-h1, h1.login-h1 { font-size: 1.5rem !important; }
+}
+
+.login-h2,
+h2.login-h2 {
+  font-weight: 300 !important;
+  font-family: 'Poppins', sans-serif !important;
+  letter-spacing: -0.02em !important;
+  font-size: 1.4rem !important;
+  line-height: 1.15 !important;
+}
+
+.premium-card-shadow {
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 24px 80px rgba(0, 0, 0, 0.9);
+}
+
+.btn-premium-shadow {
+  box-shadow: 0 4px 20px rgba(0, 184, 178, 0.4);
+}
+.btn-premium-shadow:hover {
+  box-shadow: 0 6px 28px rgba(0, 184, 178, 0.55);
+}
+
+/* CLASSE GLOBAL RESPONSIVA PARA GRIDS DE CARDS */
+.fh-cards {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+@media (max-width: 768px) {
+  .fh-cards {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
   }
 }

@@ -30,15 +30,25 @@ export class ListingsService {
   async findAllPublic(filters: {
     q?: string;
     category?: string;
+    subCategory?: string;
     minPrice?: number;
     maxPrice?: number;
     location?: string;
     state?: string;
-    sort?: string;  // 'price_asc' | 'price_desc' | 'newest' | 'oldest'
+    opportunityType?: string;
+    minRevenue?: number;
+    maxRevenue?: number;
+    minEbitda?: number;
+    maxEbitda?: number;
+    sort?: string;  // 'price_asc' | 'price_desc' | 'newest' | 'oldest' | 'revenue_desc' | 'ebitda_desc'
     page?: number;
     limit?: number;
   }) {
-    const { q, category, minPrice, maxPrice, location, state, sort, page = 1, limit = 12 } = filters;
+    const { 
+      q, category, subCategory, minPrice, maxPrice, location, state, 
+      opportunityType, minRevenue, maxRevenue, minEbitda, maxEbitda,
+      sort, page = 1, limit = 12 
+    } = filters;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { status: 'ACTIVE' };
 
@@ -73,16 +83,42 @@ export class ListingsService {
       }
     }
 
-    // Filtro por slug de categoria
+    // Filtro por slug de categoria/subcategoria
     if (category) {
       where.category = { slug: category };
     }
 
-    // Faixa de preço
+    if (subCategory) {
+      // Se subcategoria for enviada, reforça filtro por atributo ou lógica de hierarquia se disponível
+      // Por enquanto, filtros baseados em slug de categoria tratam subcategorias como categorias irmãs ou filtros de texto
+      where.OR = where.OR || [];
+      where.OR.push({ subtitle: { contains: subCategory, mode: 'insensitive' } });
+    }
+
+    // Tipo de Oportunidade
+    if (opportunityType) {
+      where.operationStructure = { contains: opportunityType, mode: 'insensitive' };
+    }
+
+    // Faixa de preço (dealValue/price)
     if (minPrice || maxPrice) {
       where.price = {};
       if (minPrice) where.price.gte = minPrice;
       if (maxPrice) where.price.lte = maxPrice;
+    }
+
+    // Faixa de Receita
+    if (minRevenue || maxRevenue) {
+      where.annualRevenue = {};
+      if (minRevenue) where.annualRevenue.gte = minRevenue;
+      if (maxRevenue) where.annualRevenue.lte = maxRevenue;
+    }
+
+    // Faixa de EBITDA
+    if (minEbitda || maxEbitda) {
+      where.ebitda = {};
+      if (minEbitda) where.ebitda.gte = minEbitda;
+      if (maxEbitda) where.ebitda.lte = maxEbitda;
     }
 
     // Ordenação — featured sempre primeiro, depois user sort
@@ -90,6 +126,8 @@ export class ListingsService {
     let userSort: any = { createdAt: 'desc' };
     if (sort === 'price_asc') userSort = { price: 'asc' };
     else if (sort === 'price_desc') userSort = { price: 'desc' };
+    else if (sort === 'revenue_desc') userSort = { annualRevenue: 'desc' };
+    else if (sort === 'ebitda_desc') userSort = { ebitda: 'desc' };
     else if (sort === 'oldest') userSort = { createdAt: 'asc' };
 
     const orderBy = [{ featuredPriority: 'desc' as const }, userSort];
@@ -136,33 +174,46 @@ export class ListingsService {
   async getSimilarListings(listingId: string, take = 4) {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
-      select: { categoryId: true, price: true, id: true },
+      include: { category: true }
     });
 
     if (!listing) return [];
 
     const priceNum = listing.price ? Number(listing.price) : 0;
-    const priceLow = priceNum * 0.5;
-    const priceHigh = priceNum * 2.0;
+    const priceLow = priceNum * 0.7; // Mais restrito: 30% variação
+    const priceHigh = priceNum * 1.3;
 
     return this.prisma.listing.findMany({
       where: {
         status: 'ACTIVE',
         id: { not: listing.id },
-        OR: [
+        AND: [
           { categoryId: listing.categoryId },
-          { price: { gte: priceLow, lte: priceHigh } },
-        ],
+          {
+            OR: [
+              { price: { gte: priceLow, lte: priceHigh } },
+              { state: listing.state },
+              { subtitle: { contains: listing.subtitle || '', mode: 'insensitive' } }
+            ]
+          }
+        ]
       },
       select: {
         id: true,
         slug: true,
         title: true,
         price: true,
-        category: { select: { name: true } },
+        state: true,
+        city: true,
+        annualRevenue: true,
+        ebitda: true,
+        category: { select: { name: true, slug: true } },
       },
       take,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { isFeatured: 'desc' },
+        { createdAt: 'desc' }
+      ],
     });
   }
 
@@ -236,6 +287,41 @@ export class ListingsService {
       orderBy: { createdAt: 'desc' }
     });
   }
+  /**
+   * Detalhes públicos por slug.
+   */
+  async findOnePublic(slugOrId: string) {
+    const isUuid = slugOrId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    
+    const listing = await this.prisma.listing.findFirst({
+      where: {
+        OR: [
+          { slug: slugOrId },
+          ...(isUuid ? [{ id: slugOrId }] : [])
+        ],
+        status: 'ACTIVE'
+      },
+      include: {
+        tenant: { select: { name: true } },
+        category: true,
+        company: {
+          select: {
+            name: true,
+            isVerified: true,
+            createdAt: true,
+          }
+        },
+        attrValues: { include: { attribute: true } },
+        features: true,
+        businessHours: true,
+        media: true,
+      }
+    });
+
+    if (!listing) throw new NotFoundException('Anúncio não encontrado.');
+
+    // Rastreamento assíncrono
+    this.analytics.trackEvent(listing.tenantId, 'VIEW', listing.id).catch(() => {});
 
     return listing;
   }

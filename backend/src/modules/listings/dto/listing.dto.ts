@@ -43,22 +43,17 @@ export class CreateListingDto {
   @IsString()
   title: string;
 
-  @IsOptional()
-  @IsString()
-  slug?: string;
+  @IsOptional() @IsString() subtitle?: string;
 
-  @IsString()
-  description: string;
+  @IsOptional() @IsString() slug?: string;
 
-  @IsOptional()
-  @IsNumber()
-  price?: number;
+  @IsString() description: string;
 
-  @IsString()
-  categoryId: string;
+  @IsOptional() @IsNumber() price?: number;
 
-  @IsString()
-  companyId: string;
+  @IsString() categoryId: string;
+
+  @IsString() companyId: string;
 
   // Localização
   @IsOptional() @IsString() city?: string;
@@ -83,11 +78,24 @@ export class CreateListingDto {
   @IsOptional() @IsString() linkedinUrl?: string;
   @IsOptional() @IsString() tiktokUrl?: string;
 
-  // Financeiro
+  // Financeiro e Métricas (Padronizados)
+  @IsOptional() @IsNumber() annualRevenue?: number;
+  @IsOptional() @IsNumber() ebitda?: number;
+  @IsOptional() @IsNumber() ebitdaMargin?: number;
+  @IsOptional() @IsNumber() avgTicket?: number;
   @IsOptional() @IsNumber() investmentValue?: number;
-  @IsOptional() @IsString() revenue?: string;
-  @IsOptional() @IsString() ebitda?: string;
-  @IsOptional() @IsString() employeesCount?: string;
+
+  // Operacional e Negócio
+  @IsOptional() @IsInt() employeesCount?: number;
+  @IsOptional() @IsInt() marketTime?: number;
+  @IsOptional() @IsInt() clientBaseCount?: number;
+  @IsOptional() @IsString() revenueModel?: string;
+  @IsOptional() @IsString() valuationMethod?: string;
+  @IsOptional() @IsString() reasonForSale?: string;
+  @IsOptional() @IsString() operationStructure?: string;
+  @IsOptional() @IsString() buyerProfile?: string;
+  @IsOptional() @IsString() nextSteps?: string;
+  @IsOptional() @IsString() confidentialityNote?: string;
 
   // SEO
   @IsOptional() @IsString() seoTitle?: string;

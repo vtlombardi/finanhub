@@ -14,9 +14,19 @@ import { Lead, Proposal } from '@shared/contracts';
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const INTENT_CONFIG: Record<string, { label: string; cls: string }> = {
-  HIGH:   { label: 'Alto',   cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-  MEDIUM: { label: 'Médio',  cls: 'bg-amber-500/15  text-amber-400  border-amber-500/30'  },
-  LOW:    { label: 'Baixo',  cls: 'bg-slate-700      text-slate-400  border-slate-600'      },
+  HIGH:   { label: 'Alta',   cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+  MEDIUM: { label: 'Média',  cls: 'bg-amber-500/15  text-amber-400  border-amber-500/30'  },
+  LOW:    { label: 'Baixa',  cls: 'bg-slate-700      text-slate-400  border-slate-600'      },
+};
+
+const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
+  NEW:           { label: 'Novo',           cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+  UNDER_REVIEW:  { label: 'Em Análise',     cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+  QUALIFIED:     { label: 'Qualificado',    cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  CONTACTED:     { label: 'Em Contato',     cls: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
+  PROPOSAL_SENT: { label: 'Com Proposta',   cls: 'bg-violet-500/10 text-violet-400 border-violet-500/20' },
+  WON:           { label: 'Convertido',     cls: 'bg-emerald-600/20 text-emerald-300 border-emerald-500/30' },
+  LOST:          { label: 'Perdido',        cls: 'bg-slate-700/50 text-slate-400 border-slate-600' },
 };
 
 const PROPOSAL_STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
@@ -209,6 +219,12 @@ export default function LeadsPage() {
                           {lead.score !== null && (
                             <span className="text-[10px] font-mono text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
                               score {lead.score}
+                            </span>
+                          )}
+
+                          {lead.status && (
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_CONFIG[lead.status]?.cls || 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                              {STATUS_CONFIG[lead.status]?.label || lead.status}
                             </span>
                           )}
 

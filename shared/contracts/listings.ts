@@ -50,6 +50,7 @@ export interface Listing {
   categoryId: string;
   slug: string;
   title: string;
+  subtitle?: string | null;
   description: string;
   price: number;
   status: ListingStatus;
@@ -57,34 +58,66 @@ export interface Listing {
   featuredUntil?: string | null;
   createdAt: string;
   updatedAt: string;
+  ownerId?: string | null;
+  
   category?: ListingCategory;
   tenant?: { name: string };
   company?: { 
     name: string; 
     isVerified: boolean; 
-    trustScore?: number;
-    responseRate?: number;
-    responseTime?: string;
-    yearsActive?: number;
-    dealsCount?: number;
-    bio?: string;
     createdAt: string;
   };
   media?: ListingMedia[];
   attrValues?: ListingAttributeValue[];
   features?: ListingFeature[];
   
-  // Localização (Opcional no sumário, detalhado no review)
+  // Localização
   city?: string | null;
   state?: string | null;
   neighborhood?: string | null;
+  zipCode?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  addressReference?: string | null;
+  country?: string | null;
 
-  // Métricas Financeiras
-  revenue?: string | null;
-  ebitda?: string | null;
-  employeesCount?: string | null;
+  // Financeiro e Métricas (Padronizados)
+  annualRevenue?: number | null;
+  ebitda?: number | null;
+  ebitdaMargin?: number | null;
+  avgTicket?: number | null;
+  investmentValue?: number | null;
+  
+  // Operacional e Negócio
+  employeesCount?: number | null;
+  marketTime?: number | null;
+  clientBaseCount?: number | null;
+  revenueModel?: string | null;
+  valuationMethod?: string | null;
+  reasonForSale?: string | null;
+  operationStructure?: string | null;
+  buyerProfile?: string | null;
+  nextSteps?: string | null;
+  confidentialityNote?: string | null;
 
-  // IA Insight (Recomendável para futura expansão)
+  // Contato e SEO
+  email?: string | null;
+  websiteUrl?: string | null;
+  phonePrimary?: string | null;
+  phoneSecondary?: string | null;
+  facebookUrl?: string | null;
+  instagramUrl?: string | null;
+  twitterUrl?: string | null;
+  linkedinUrl?: string | null;
+  tiktokUrl?: string | null;
+  logoUrl?: string | null;
+  videoUrl?: string | null;
+  videoDescription?: string | null;
+  seoTitle?: string | null;
+  seoKeywords?: string | null;
+  seoDescription?: string | null;
+
+  // IA Insight
   matchScore?: number; // 0-100
   aiReasoning?: string;
 }
@@ -92,11 +125,17 @@ export interface Listing {
 export interface SearchFilters {
   q?: string;
   category?: string;
+  subCategory?: string;
   minPrice?: number;
   maxPrice?: number;
   location?: string;
   state?: string;
-  sort?: 'price_asc' | 'price_desc' | 'newest' | 'oldest';
+  opportunityType?: string;
+  minRevenue?: number;
+  maxRevenue?: number;
+  minEbitda?: number;
+  maxEbitda?: number;
+  sort?: 'price_asc' | 'price_desc' | 'newest' | 'oldest' | 'revenue_desc' | 'ebitda_desc';
   page?: number;
   limit?: number;
 }

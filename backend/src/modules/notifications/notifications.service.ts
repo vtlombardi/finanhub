@@ -1,9 +1,58 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
+
+  /**
+   * Notifica o proprietário de um anúncio sobre um novo lead recebido.
+   * Aciona notificação in-app e disparo de e-mail.
+   */
+  async notifyListingOwnerOfNewLead(leadId: string) {
+    // Busca detalhes do lead para notificação
+    const lead = await this.prisma.lead.findUnique({
+      where: { id: leadId },
+      include: {
+        investor: true,
+        listing: {
+          include: {
+            owner: true,
+          },
+        },
+      },
+    });
+
+    if (!lead || !lead.listing) return;
+
+    const ownerId = lead.listing.ownerId;
+    const ownerEmail = lead.listing.owner?.email;
+
+    const notificationTitle = 'Novo Lead Recebido';
+    const notificationBody = `Interesse manifestado em "${lead.listing.title}" por ${lead.investor.fullName}.`;
+
+    // 1. Notificação In-App
+    if (ownerId) {
+      await this.create(
+        ownerId,
+        'NEW_LEAD',
+        notificationTitle,
+        notificationBody,
+        { leadId, listingId: lead.listingId }
+      );
+    }
+
+    // 2. Notificação por E-mail (via MailService para manter desacoplamento)
+    if (ownerEmail) {
+      await this.mailService.sendNewLeadNotification(ownerEmail, lead);
+    }
+    
+    // 3. Futuro: WhatsApp/SMS canais podem ser adicionados aqui
+  }
 
   /**
    * Cria uma notificação in-app para um usuário.

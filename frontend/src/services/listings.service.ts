@@ -21,6 +21,7 @@ export interface ListingMedia {
 export interface ListingData {
   id?: string;
   title: string;
+  subtitle?: string;
   slug?: string;
   description: string;
   price?: number;
@@ -34,6 +35,8 @@ export interface ListingData {
   addressLine1?: string;
   addressLine2?: string;
   zipCode?: string;
+  addressReference?: string;
+  country?: string;
   
   // Contato
   email?: string;
@@ -48,11 +51,24 @@ export interface ListingData {
   linkedinUrl?: string;
   tiktokUrl?: string;
   
-  // Financeiro
+  // Financeiro e Métricas (Padronizados)
+  annualRevenue?: number;
+  ebitda?: number;
+  ebitdaMargin?: number;
+  avgTicket?: number;
   investmentValue?: number;
-  revenue?: string;
-  ebitda?: string;
-  employeesCount?: string;
+
+  // Operacional e Negócio
+  employeesCount?: number;
+  marketTime?: number;
+  clientBaseCount?: number;
+  revenueModel?: string;
+  valuationMethod?: string;
+  reasonForSale?: string;
+  operationStructure?: string;
+  buyerProfile?: string;
+  nextSteps?: string;
+  confidentialityNote?: string;
   
   // SEO
   seoTitle?: string;
@@ -69,7 +85,7 @@ export interface ListingData {
   businessHours?: BusinessHour[];
   media?: ListingMedia[];
   
-  // Status (presente no model mas não no DTO inicial, vou alinhar com o service)
+  // Status
   status?: string;
 }
 

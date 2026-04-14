@@ -1,0 +1,177 @@
+/* ISOLAMENTO TOTAL DO FILTRO AVANÇADO - VERSÃO FLEXÍVEL */
+
+.fh-filter {
+  all: initial;
+  display: block;
+  width: 320px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  box-sizing: border-box;
+  color: white;
+  margin-right: 2rem;
+}
+
+/* Reset agressivo nos descendentes conforme solicitado */
+.fh-filter * {
+  all: unset;
+  box-sizing: border-box;
+  font-family: inherit;
+  display: block;
+}
+
+/* CONTAINER PRINCIPAL E CARD */
+.fh-filter aside {
+  width: 100%;
+}
+
+.fh-filter aside > div {
+  background-color: rgba(11, 18, 32, 0.8) !important; /* #0B1220 com alpha */
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 1.5rem !important;
+  padding: 1.75rem !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ESPAÇAMENTO VERTICAL - REMOVIDO !IMPORTANT PARA PERMITIR SPACE-Y DO TAILWIND */
+.fh-filter aside > div > * + * {
+  margin-top: 1.5rem;
+}
+
+/* TÍTULO (H3) - REMOVIDO !IMPORTANT EM COR */
+.fh-filter h3 {
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  color: #00b8b2;
+  letter-spacing: 3px !important;
+  font-weight: 700 !important;
+  margin-top: 0 !important;
+}
+
+/* RÓTULOS DE SEÇÃO (P) - REMOVIDO !IMPORTANT EM COR E MARGEM PARA DEIXAR TAILWIND AGIR */
+.fh-filter p {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+}
+
+/* INPUTS E SELECTS - REMOVIDO !IMPORTANT EM BG PARA PERMITIR BUSCA CINZA CLARO */
+.fh-filter input[type="text"],
+.fh-filter input[type="number"],
+.fh-filter select {
+  width: 100% !important;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem !important;
+  padding: 0.875rem !important;
+  font-size: 0.875rem;
+  color: white;
+  outline: none;
+  cursor: text !important;
+  transition: all 0.2s;
+}
+
+.fh-filter input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.fh-filter input:focus,
+.fh-filter select:focus {
+  border-color: rgba(18, 179, 175, 0.5);
+}
+
+/* ARROW PARA SELECTS */
+.fh-filter select {
+  cursor: pointer !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.4)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 1rem !important;
+  padding-right: 2.5rem !important;
+}
+
+/* RANGE SLIDER */
+.fh-filter input[type="range"] {
+  appearance: auto !important;
+  height: 4px !important;
+  width: 100% !important;
+  accent-color: #00b8b2 !important;
+  background: rgba(255,255,255,0.05) !important;
+  cursor: pointer !important;
+  margin-top: 1rem !important;
+}
+
+/* LAYOUT FLEXÍVEL */
+.fh-filter .flex {
+  display: flex !important;
+}
+
+.fh-filter .justify-between {
+  justify-content: space-between !important;
+}
+
+.fh-filter .items-center {
+  align-items: center !important;
+}
+
+.fh-filter .gap-3 {
+  gap: 0.75rem !important;
+}
+
+.fh-filter .grid {
+  display: grid !important;
+}
+
+.fh-filter .grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.fh-filter .gap-3 {
+  gap: 0.75rem !important;
+}
+
+/* LABELS E CHECKBOXES */
+.fh-filter label {
+  cursor: pointer !important;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  display: flex !important;
+}
+
+.fh-filter input[type="checkbox"] {
+  appearance: checkbox !important;
+  accent-color: #00b8b2 !important;
+  width: auto !important;
+  display: inline-block !important;
+}
+
+/* BOTÃO APLICAR FILTROS - ESPECÍFICO */
+.fh-filter .btn-apply-filters {
+  width: 100% !important;
+  background-color: #00b8b2 !important;
+  color: black !important;
+  font-weight: 900 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.25em !important;
+  padding: 1.125rem 0 !important;
+  border-radius: 0.75rem !important;
+  cursor: pointer !important;
+  text-align: center !important;
+  display: block !important;
+  transition: all 0.2s !important;
+  box-shadow: 0 10px 30px rgba(18, 179, 175, 0.1) !important;
+}
+
+.fh-filter .btn-apply-filters:hover {
+  filter: brightness(1.1) !important;
+}
+
+/* BOTÃO LIMPAR - RESET PARA TAILWIND */
+.fh-filter .btn-reset-filters {
+  all: unset !important;
+  display: block !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}

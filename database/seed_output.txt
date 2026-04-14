@@ -1,0 +1,4 @@
+
+> database@1.0.0 seed
+> npx ts-node seedListings.ts
+

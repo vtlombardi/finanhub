@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import NotificationBell from './NotificationBell';
+import { useAuth } from '@/features/auth/AuthProvider';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Itens do menu principal (ícones da esquerda)
@@ -20,20 +22,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { id: 'content', icon: 'fa-file-text-o', label: 'Conteúdo', href: '/dashboard/listings' },
     { id: 'categories', icon: 'fa-tags', label: 'Categorias', href: '/dashboard/categories' },
     { id: 'leads', icon: 'fa-inbox', label: 'Leads', href: '/dashboard/leads' },
+    { id: 'admin-leads', icon: 'fa-briefcase', label: 'Central de Leads', href: '/dashboard/admin/leads' },
     { id: 'messages', icon: 'fa-envelope-o', label: 'Mensagens', href: '/dashboard/messages' },
     { id: 'stats', icon: 'fa-bar-chart', label: 'Métricas', href: '/dashboard/stats' },
     { id: 'members', icon: 'fa-users', label: 'Membros', href: '/dashboard/members' },
     { id: 'dataroom', icon: 'fa-lock', label: 'Data Room', href: '/dashboard/dataroom' },
     { id: 'moderation', icon: 'fa-shield', label: 'Moderação', href: '/dashboard/moderation' },
     { id: 'plans', icon: 'fa-credit-card', label: 'Planos', href: '/dashboard/plans' },
+    { id: 'profile', icon: 'fa-user-circle-o', label: 'Perfil', href: '/dashboard/profile' },
     { id: 'settings', icon: 'fa-sliders', label: 'Configurações', href: '/dashboard/settings' },
   ];
 
-  // Itens do submenu de Conteúdo
+  // Itens do submenu
   const contentSubmenu = [
     { label: 'Anúncios', href: '/dashboard/listings' },
     { label: 'Importação', href: '/dashboard/import' },
     { label: 'Exportação', href: '/dashboard/export' },
+  ];
+
+  const adminSubmenu = [
+    { label: 'Central de Leads', href: '/dashboard/admin/leads' },
+    { label: 'Moderação', href: '/dashboard/moderation' },
+    { label: 'Planos de Cobrança', href: '/dashboard/plans' },
   ];
 
   return (
@@ -59,13 +69,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Submenu expandido (Labels) */}
         <div className="sidebar-submenu">
           <div className="submenu-item" id="dashboard-content" style={{ display: 'block' }}>
-            <div className="submenu-title">Conteúdo</div>
+            <div className="submenu-title">
+              {pathname?.includes('/admin') || pathname === '/dashboard/plans' || pathname === '/dashboard/moderation' 
+                ? 'Operação' 
+                : 'Conteúdo'}
+            </div>
             <div className="submenu-list">
-              {contentSubmenu.map((item) => (
+              {(pathname?.includes('/admin') || pathname === '/dashboard/plans' || pathname === '/dashboard/moderation' 
+                ? adminSubmenu 
+                : contentSubmenu).map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`submenu-link ${pathname?.startsWith(item.href) ? 'is-active' : ''}`}
+                  className={`submenu-link ${pathname === item.href ? 'is-active' : ''}`}
                 >
                   {item.label}
                 </Link>
@@ -116,9 +132,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
              </div>
 
              <div className="user-actions">
-                <button type="button" className="user-account">
-                    <span className="user-avatar" style={{ backgroundColor: '#12b3af', color: '#fff', borderRadius: '50%', padding: '8px', fontSize: '12px' }}>VL</span>
-                </button>
+                <Link href="/dashboard/profile" className="user-account">
+                  <span className="user-avatar" style={{ backgroundColor: '#12b3af', color: '#fff', borderRadius: '50%', padding: '8px', fontSize: '12px', minWidth: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {user?.fullName 
+                      ? user.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                      : user?.email?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                </Link>
              </div>
           </div>
         </div>

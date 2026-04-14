@@ -5,12 +5,16 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { LeadsService } from './leads.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CreateLeadDto, CreateProposalDto, UpdateProposalStatusDto } from './dto/create-lead.dto';
+import { AdminLeadQueryDto, UpdateLeadStatusDto, UpdateLeadNotesDto } from './dto/admin-lead.dto';
 
 @Controller('leads')
 @UseGuards(JwtAuthGuard)
@@ -63,5 +67,34 @@ export class LeadsController {
       req.user.tenantId,
       body.status,
     );
+  }
+
+  // --- ADMIN ROUTES ---
+
+  @Get('admin')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'OWNER')
+  async adminFindAll(@Query() query: AdminLeadQueryDto) {
+    return this.leadsService.adminFindAll(query);
+  }
+
+  @Patch('admin/:id/status')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'OWNER')
+  async adminUpdateStatus(
+    @Param('id') id: string,
+    @Body() body: UpdateLeadStatusDto,
+  ) {
+    return this.leadsService.adminUpdateStatus(id, body);
+  }
+
+  @Patch('admin/:id/notes')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'OWNER')
+  async adminUpdateNotes(
+    @Param('id') id: string,
+    @Body() body: UpdateLeadNotesDto,
+  ) {
+    return this.leadsService.adminUpdateNotes(id, body);
   }
 }
