@@ -83,31 +83,67 @@ export class LeadsService {
     return lead;
   }
 
-  async getLeadsForTenant(tenantId: string) {
-    return this.prisma.lead.findMany({
-      where: { tenantId },
-      include: {
-        listing: { select: { id: true, title: true } },
-        investor: { select: { id: true, fullName: true, email: true } },
-        proposals: true,
+  async getLeadsForTenant(tenantId: string, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const where = { tenantId };
+
+    const [data, total] = await Promise.all([
+      this.prisma.lead.findMany({
+        where,
+        include: {
+          listing: { select: { id: true, title: true } },
+          investor: { select: { id: true, fullName: true, email: true } },
+          proposals: true,
+        },
+        orderBy: [{ score: 'desc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.lead.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: [{ score: 'desc' }, { createdAt: 'desc' }],
-    });
+    };
   }
 
-  async getMyLeads(investorId: string) {
-    return this.prisma.lead.findMany({
-      where: { investorId },
-      include: {
-        listing: {
-          include: {
-            category: true,
+  async getMyLeads(investorId: string, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const where = { investorId };
+
+    const [data, total] = await Promise.all([
+      this.prisma.lead.findMany({
+        where,
+        include: {
+          listing: {
+            include: {
+              category: true,
+            },
           },
+          proposals: true,
         },
-        proposals: true,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.lead.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async createProposal(

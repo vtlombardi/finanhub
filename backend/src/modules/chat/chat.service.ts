@@ -13,34 +13,41 @@ export class ChatService {
    * Lista todas as conversas em que o usuário participa.
    * Administradores podem ver todas as conversas do tenant.
    */
-  async getThreads(userId: string, tenantId: string, role: string) {
-    if (role === 'ADMIN' || role === 'OWNER') {
-      return this.prisma.chatThread.findMany({
-        where: { tenantId },
+  async getThreads(userId: string, tenantId: string, role: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const where = (role === 'ADMIN' || role === 'OWNER') 
+      ? { tenantId } 
+      : { participants: { some: { userId } } };
+
+    const [data, total] = await Promise.all([
+      this.prisma.chatThread.findMany({
+        where,
         include: {
           participants: { include: { user: { select: { id: true, fullName: true, email: true } } } },
           messages: { take: 1, orderBy: { createdAt: 'desc' } },
         },
         orderBy: { updatedAt: 'desc' },
-      });
-    }
+        skip,
+        take: limit,
+      }),
+      this.prisma.chatThread.count({ where }),
+    ]);
 
-    return this.prisma.chatThread.findMany({
-      where: {
-        participants: { some: { userId } },
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      include: {
-        participants: { include: { user: { select: { id: true, fullName: true, email: true } } } },
-        messages: { take: 1, orderBy: { createdAt: 'desc' } },
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
+    };
   }
 
   /**
    * Busca o histórico de mensagens de uma thread específica.
    */
-  async getMessages(threadId: string, userId: string, role: string) {
+  async getMessages(threadId: string, userId: string, role: string, page = 1, limit = 50) {
     const thread = await this.prisma.chatThread.findUnique({
       where: { id: threadId },
       include: { participants: true },
@@ -54,11 +61,29 @@ export class ChatService {
       throw new ForbiddenException('Você não tem acesso a esta conversa.');
     }
 
-    return this.prisma.chatMessage.findMany({
-      where: { threadId },
-      include: { sender: { select: { id: true, fullName: true } } },
-      orderBy: { createdAt: 'asc' },
-    });
+    const skip = (page - 1) * limit;
+    const where = { threadId };
+
+    const [data, total] = await Promise.all([
+      this.prisma.chatMessage.findMany({
+        where,
+        include: { sender: { select: { id: true, fullName: true } } },
+        orderBy: { createdAt: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.chatMessage.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   /**

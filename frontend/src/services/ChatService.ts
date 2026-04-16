@@ -9,16 +9,16 @@ export class ChatService {
   /**
    * Lista todas as conversas em que o usuário participa.
    */
-  static async listThreads(): Promise<ChatThread[]> {
-    const response = await api.get('/chat/threads');
+  static async listThreads(page = 1, limit = 20): Promise<any> {
+    const response = await api.get('/chat/threads', { params: { page, limit } });
     return response.data;
   }
 
   /**
    * Obtém o histórico de mensagens de uma conversa específica.
    */
-  static async getMessages(threadId: string): Promise<ChatMessage[]> {
-    const response = await api.get(`/chat/threads/${threadId}/messages`);
+  static async getMessages(threadId: string, page = 1, limit = 50): Promise<any> {
+    const response = await api.get(`/chat/threads/${threadId}/messages`, { params: { page, limit } });
     return response.data;
   }
 

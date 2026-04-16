@@ -12,6 +12,7 @@ import Script from 'next/script';
 interface OpportunitySidebarProps {
   onFilterChange: (filters: any) => void;
   initialSearch?: string;
+  initialCategory?: string;
 }
 
 // Declarando o elemento customizado para o TypeScript
@@ -23,7 +24,11 @@ declare global {
   }
 }
 
-export const OpportunitySidebar: React.FC<OpportunitySidebarProps> = ({ onFilterChange, initialSearch = '' }) => {
+export const OpportunitySidebar: React.FC<OpportunitySidebarProps> = ({ 
+  onFilterChange, 
+  initialSearch = '', 
+  initialCategory = '' 
+}) => {
   const filterRef = useRef<any>(null);
 
   useEffect(() => {
@@ -74,6 +79,7 @@ export const OpportunitySidebar: React.FC<OpportunitySidebarProps> = ({ onFilter
         <finanhub-filter 
           ref={filterRef}
           data-initial-search={initialSearch}
+          data-initial-category={initialCategory}
         />
       </div>
 

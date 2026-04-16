@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request, Query, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, Delete, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException, NotFoundException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -44,9 +44,45 @@ export class ListingsController {
   // ROTA PRIVADA (Meus Anúncios)
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async findMyListings(@Request() req: any) {
-    return this.listingsService.findMyListings(req.user.tenantId);
+  async findMyListings(
+    @Request() req: any,
+    @Query('q') q?: string,
+    @Query('category') category?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.listingsService.findMyListings(req.user.tenantId, {
+      q,
+      category,
+      status,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+    });
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('private/:id/duplicate')
+  async duplicate(@Param('id') id: string, @Request() req: any) {
+    return this.listingsService.duplicate(id, req.user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('private/:id/status')
+  async toggleStatus(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Body('status') status: string,
+  ) {
+    return this.listingsService.toggleStatus(id, req.user.tenantId, status);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('private/:id')
+  async softDelete(@Param('id') id: string, @Request() req: any) {
+    return this.listingsService.softDelete(id, req.user.tenantId);
+  }
+
 
   // ROTA PRIVADA (Meus Favoritos)
   @UseGuards(JwtAuthGuard)

@@ -80,6 +80,51 @@ export interface ListingData {
   videoUrl?: string;
   videoDescription?: string;
   
+  // Atributos Dinâmicos (Categorias específicas)
+  attrValues?: {
+    attributeId: string;
+    valueStr?: string;
+    valueNum?: number;
+    attribute?: {
+      name: string;
+      label: string;
+    };
+  }[];
+
+  // Campos Virtuais para Formulários (Mapeados para attrValues no submit)
+  franchiseName?: string;
+  initialInvestmentTotal?: number;
+  franchiseFee?: number;
+  averageEstimatedRevenue?: number;
+  estimatedPayback?: string;
+  operationModel?: string;
+  royaltiesFee?: string;
+  marketingFee?: string;
+  supportOffered?: string;
+  trainingIncluded?: string;
+  openedUnitsCount?: number;
+  idealFranchiseeProfile?: string;
+  territorialExclusivity?: string;
+  expansionRegion?: string;
+
+  // Campos Virtuais para Startups
+  startupStage?: string;
+  targetSector?: string;
+  fundingRound?: string;
+  fundingAmountRequested?: number;
+  equityOffered?: string;
+  businessModelType?: string;
+  mrrCurrent?: number;
+  tamMarketSize?: string;
+  foundingTeamBrief?: string;
+  techStackBrief?: string;
+  validationPOCBrief?: string;
+  startupProblem?: string;
+  startupSolution?: string;
+  competitiveEdge?: string;
+  useOfCapital?: string;
+  growthPotentialBrief?: string;
+
   // Relações
   features?: ListingFeature[];
   businessHours?: BusinessHour[];
@@ -116,6 +161,11 @@ export const listingsService = {
     const response = await api.post('/listings/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return response.data;
+  },
+
+  listCategories: async () => {
+    const response = await api.get('/categories');
     return response.data;
   },
 };

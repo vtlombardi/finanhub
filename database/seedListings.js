@@ -15,6 +15,13 @@ const CATEGORIES = [
 
 const STATES = ["SP", "RJ", "MG", "PR", "SC", "RS", "GO", "MT", "BA", "CE"];
 const MODELS = ["Asset Deal", "Share Deal", "Fusão", "Investimento"];
+const CATEGORY_IMAGES = {
+  "Compra e Venda de Empresas": "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=800&auto=format&fit=crop&q=80",
+  "Maquinários e Equipamentos": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
+  "Imóveis Comerciais": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80",
+  "Agronegócio": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+  "Startups e Tecnologia": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80"
+};
 
 async function main() {
   console.log("🚀 Iniciando Seeding Controlado (JS)...");
@@ -90,6 +97,7 @@ async function main() {
         description: `Esta é uma oportunidade de teste institucional premium. Localizada em ${state}, operando sob o modelo ${model}. Excelente ROI e estrutura consolidada.`,
         price: price,
         state: state,
+        logoUrl: CATEGORY_IMAGES[category.name] || "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800",
         status: 'ACTIVE',
         isFeatured: i % 5 === 0,
         isTest: true,

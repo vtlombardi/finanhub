@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import "./globals.css";
+import NotificationToast from "@/components/common/NotificationToast";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className={poppins.variable} suppressHydrationWarning>
         <AuthProvider>
           {children}
+          <NotificationToast />
         </AuthProvider>
       </body>
     </html>

@@ -304,6 +304,59 @@
 }
 .secondaryCta:hover { background: rgba(255,255,255,.05); }
 
+/* Etapas do Processo (Step Bubbles) */
+.stepBubble {
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+  border: 1px solid rgba(255,255,255,.08);
+  text-align: center;
+  transition: border-color .22s ease;
+}
+.stepBubble:hover {
+  border-color: rgba(0, 184, 178, .25);
+}
+
+.stepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--brand), var(--blue));
+  color: #031113;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  margin-bottom: 12px;
+}
+
+/* Filtro Card Container */
+.filterCard {
+  background: linear-gradient(180deg, rgba(17,23,35,.96), rgba(10,14,22,.98));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+/* Bloco de Preço na Sidebar */
+.summaryPrice {
+  margin-bottom: 4px;
+}
+
+/* Título de Seção (dentro de sectionHeader) */
+.sectionTitle {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: .12em;
+  color: var(--brand);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
 /* Canal de Relacionamento (Horizontal CTA) */
 .relationshipBar {
   margin-top: 32px;

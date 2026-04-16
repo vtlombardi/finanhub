@@ -6,6 +6,52 @@
 class FinanhubFilter extends HTMLElement {
   constructor() {
     super();
+    // Mapeamento de Subcategorias (Consistente com o Banco)
+    this.subcategoryGroups = {
+      "buying-selling": [
+        { value: "compra-empresas", label: "Compra de Empresas" },
+        { value: "venda-empresas", label: "Venda de Empresas" },
+        { value: "sociedades", label: "Sociedades" },
+        { value: "arrendamento", label: "Arrendamento" }
+      ],
+      "investments": [
+        { value: "empresas-existentes", label: "Empresas Existentes" },
+        { value: "projetos-investimento", label: "Projetos" },
+        { value: "startups-investimento", label: "Startups" }
+      ],
+      "franchise": [
+        { value: "comprar-franquias", label: "Comprar Franquias" },
+        { value: "vender-franquias", label: "Vender Franquias" },
+        { value: "licenciamento-produtos", label: "Licenciamento de Produtos" },
+        { value: "licenciamento-marcas", label: "Licenciamento de Marcas" }
+      ],
+      "startups": [
+        { value: "investir-projetos", label: "Investir em Projetos" },
+        { value: "investidores-anjo", label: "Investidores Anjo" },
+        { value: "parceria-desenvolvimento", label: "Parceria Desenvolvimento" }
+      ],
+      "services": [
+        { value: "servicos-financeiros", label: "Serviços Financeiros" },
+        { value: "servicos-juridicos", label: "Serviços Jurídicos" },
+        { value: "servicos-contabeis", label: "Serviços Contábeis" },
+        { value: "logistica", label: "Logística" },
+        { value: "importacao-exportacao", label: "Importação e Exportação" }
+      ],
+      "real-estate": [
+        { value: "imoveis-residenciais", label: "Imóveis Residenciais" },
+        { value: "imoveis-industriais", label: "Imóveis Industriais" },
+        { value: "galpoes-comerciais", label: "Galpões" },
+        { value: "terrenos-comerciais", label: "Terrenos" }
+      ],
+      "premium": [
+        { value: "barcos-premium", label: "Barcos" },
+        { value: "carros-premium", label: "Carros" },
+        { value: "motos-premium", label: "Motos" },
+        { value: "fazendas-premium", label: "Fazendas" },
+        { value: "titulos-premium", label: "Títulos" }
+      ]
+    };
+
     this.attachShadow({ mode: "open" });
     
     // Estado inicial
@@ -31,6 +77,15 @@ class FinanhubFilter extends HTMLElement {
   }
 
   connectedCallback() {
+    // Sincronizar estado inicial com os atributos data-initial-* se presentes
+    const initialSearch = this.getAttribute('data-initial-search');
+    const initialCategory = this.getAttribute('data-initial-category');
+    const initialSubcategory = this.getAttribute('data-initial-subcategory');
+    
+    if (initialSearch) this.state.busca = initialSearch;
+    if (initialCategory) this.state.categoria = initialCategory;
+    if (initialSubcategory) this.state.subcategoria = initialSubcategory;
+
     this.render();
   }
 
@@ -59,6 +114,7 @@ class FinanhubFilter extends HTMLElement {
   }
 
   handleInputChange(e) {
+    if (!e.target) return;
     const { name, value, type, checked } = e.target;
     const val = type === 'checkbox' ? checked : value;
     
@@ -70,6 +126,11 @@ class FinanhubFilter extends HTMLElement {
 
     if (name === 'estado') {
       this.state.cidade = "";
+    }
+
+    // Reset de subcategoria ao trocar categoria
+    if (name === 'categoria') {
+      this.state.subcategoria = "";
     }
 
     // Ao interagir com Estado, carregar dados se necessário
@@ -125,11 +186,12 @@ class FinanhubFilter extends HTMLElement {
       }
 
       .container {
-        background: #0f172a;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
+        background: #111111;
+        border: 1px solid rgba(18, 179, 175, 0.1);
+        border-radius: 20px;
         padding: 24px;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(20px);
       }
 
       /* HEADER */
@@ -137,100 +199,117 @@ class FinanhubFilter extends HTMLElement {
         display: flex;
         justify-content: space-between;
         align-items: flex-end;
-        padding-bottom: 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         margin-bottom: 24px;
       }
 
       .header h3 {
         color: #12b3af;
         text-transform: uppercase;
-        font-size: 10px;
+        font-size: 11px;
         letter-spacing: 2px;
         font-weight: 900;
+        text-shadow: 0 0 20px rgba(18, 179, 175, 0.3);
       }
 
       .header p {
         font-size: 10px;
-        color: rgba(255, 255, 255, 0.3);
-        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.4);
+        margin-top: 6px;
         text-transform: uppercase;
+        font-weight: 600;
       }
 
       .btn-reset {
         all: unset;
         font-size: 10px;
-        color: rgba(255, 255, 255, 0.3);
+        color: rgba(255, 255, 255, 0.4);
         text-transform: uppercase;
         letter-spacing: 1px;
-        padding: 6px 12px;
+        padding: 8px 14px;
         background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
+        border-radius: 10px;
         cursor: pointer;
-        transition: color 0.2s;
-        font-weight: bold;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-weight: 800;
       }
 
-      .btn-reset:hover { color: #12b3af; }
+      .btn-reset:hover { 
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+      }
 
       /* BLOCKS */
       .section {
-        margin-bottom: 24px;
+        margin-bottom: 28px;
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
       }
 
       .section-title {
         color: #12b3af;
         text-transform: uppercase;
         font-size: 10px;
-        letter-spacing: 2px;
-        font-weight: 900;
+        letter-spacing: 1.5px;
+        font-weight: 800;
         margin-bottom: 16px;
         display: block;
+        opacity: 0.8;
       }
 
       /* INPUTS */
       input[type="text"],
       select {
         width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 12px 14px;
         color: white;
         font-size: 14px;
         outline: none;
-        transition: border-color 0.2s;
+        transition: all 0.3s;
         appearance: none;
       }
 
       select {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.4)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(18,179,175,0.6)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
         background-repeat: no-repeat;
-        background-position: right 12px center;
-        background-size: 16px;
-        padding-right: 40px;
+        background-position: right 14px center;
+        background-size: 14px;
+        padding-right: 44px;
+        font-weight: 500;
       }
 
       input[type="text"]:focus, select:focus {
-        border-color: rgba(18, 179, 175, 0.5);
+        border-color: #12b3af;
+        background: rgba(255, 255, 255, 0.07);
+        box-shadow: 0 0 0 4px rgba(18, 179, 175, 0.1);
       }
 
       /* SEARCH ICON OVERLAY */
       .search-wrapper {
         position: relative;
-        margin-bottom: 24px;
+        margin-bottom: 28px;
       }
       
       .search-wrapper input {
-        padding-left: 36px !important;
+        padding-left: 42px !important;
+        font-weight: 600;
       }
 
       .search-icon {
         position: absolute;
-        left: 12px;
+        left: 16px;
         top: 50%;
         transform: translateY(-50%);
-        opacity: 0.2;
+        color: #12b3af;
+        opacity: 0.8;
         pointer-events: none;
       }
 
@@ -238,43 +317,45 @@ class FinanhubFilter extends HTMLElement {
       .price-header {
         display: flex;
         justify-content: space-between;
-        font-size: 9px;
-        color: rgba(255, 255, 255, 0.2);
-        font-weight: bold;
-        margin-bottom: 8px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.4);
+        font-weight: 700;
+        margin-bottom: 12px;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
       input[type="range"] {
         width: 100%;
         height: 6px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 8px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 10px;
         appearance: none;
         cursor: pointer;
         accent-color: #12b3af;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
       }
 
       .price-current {
         text-align: center;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
       }
 
       .price-current span {
-        background: rgba(255,255,255,0.05);
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 13px;
+        background: rgba(18, 179, 175, 0.1);
+        padding: 8px 18px;
+        border-radius: 30px;
+        font-size: 14px;
         color: #12b3af;
-        font-weight: bold;
-        border: 1px solid rgba(255,255,255,0.05);
+        font-weight: 800;
+        border: 1px solid rgba(18, 179, 175, 0.2);
+        box-shadow: 0 10px 20px rgba(18, 179, 175, 0.1);
       }
 
       .price-inputs {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        gap: 16px;
       }
 
       .input-with-label {
@@ -283,27 +364,28 @@ class FinanhubFilter extends HTMLElement {
 
       .input-with-label span {
         position: absolute;
-        left: 10px;
+        left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        font-size: 10px;
-        color: rgba(255,255,255,0.2);
+        font-size: 9px;
+        color: rgba(255,255,255,0.4);
         font-weight: 900;
         pointer-events: none;
         text-transform: uppercase;
       }
 
       .input-with-label input {
-        padding-left: 40px !important;
-        font-size: 12px !important;
+        padding-left: 44px !important;
+        font-size: 13px !important;
+        font-weight: 700;
       }
 
       /* CHECKBOXES */
       .checkbox-container {
-        background: rgba(255,255,255,0.03);
+        background: rgba(255,255,255,0.02);
         border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 16px;
+        border-radius: 16px;
+        padding: 20px;
       }
 
       .checkbox-item {
@@ -311,37 +393,25 @@ class FinanhubFilter extends HTMLElement {
         justify-content: space-between;
         align-items: center;
         cursor: pointer;
-        font-size: 12px;
-        color: rgba(255, 255, 255, 0.6);
-        margin-bottom: 12px;
+        padding: 8px 0;
+        transition: all 0.2s;
       }
 
-      .checkbox-item:last-child { margin-bottom: 0; }
+      .checkbox-item:hover {
+        opacity: 0.8;
+      }
+
+      .checkbox-item span {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 600;
+      }
 
       .checkbox-item input {
         accent-color: #12b3af;
-        width: 16px;
-        height: 16px;
-      }
-
-      /* GRID FOR SCORE/SORT */
-      .bottom-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        padding-top: 24px;
-        border-top: 1px solid rgba(255,255,255,0.05);
-        margin-top: 12px;
-      }
-
-      .bottom-label {
-        font-size: 9px;
-        color: #12b3af;
-        font-weight: 900;
-        text-transform: uppercase;
-        margin-bottom: 8px;
-        display: block;
-        letter-spacing: 1px;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
       }
 
       /* APPLY BUTTON */
@@ -350,25 +420,26 @@ class FinanhubFilter extends HTMLElement {
         background: #12b3af;
         color: #000;
         border: none;
-        border-radius: 12px;
-        padding: 18px;
-        font-size: 11px;
-        font-weight: 900;
+        border-radius: 16px;
+        padding: 20px;
+        font-size: 12px;
+        font-weight: 950;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
         cursor: pointer;
-        margin-top: 24px;
-        transition: all 0.2s;
-        box-shadow: 0 10px 30px rgba(18, 179, 175, 0.2);
+        margin-top: 12px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 15px 40px rgba(18, 179, 175, 0.3);
       }
 
       .btn-apply:hover {
-        filter: brightness(1.1);
-        transform: translateY(-1px);
+        background: white;
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 20px 50px rgba(18, 179, 175, 0.4);
       }
 
       .btn-apply:active {
-        transform: translateY(0);
+        transform: translateY(-2px);
       }
     `;
   }
@@ -377,6 +448,9 @@ class FinanhubFilter extends HTMLElement {
     const states = this.locationData ? this.locationData.estados : [];
     const selectedStateObj = states.find(s => s.sigla === this.state.estado);
     const cities = selectedStateObj ? selectedStateObj.cidades : [];
+    
+    // Pegar subcategorias do grupo selecionado
+    const availableSubcategories = this.subcategoryGroups[this.state.categoria] || [];
 
     this.shadowRoot.innerHTML = `
       <style>${this.getStyles()}</style>
@@ -384,34 +458,51 @@ class FinanhubFilter extends HTMLElement {
         <div class="header">
           <div>
             <h3>Busca Avançada</h3>
-            <p>Refine sua procura</p>
+            <p>Institutional Marketplace</p>
           </div>
           <button class="btn-reset" onclick="this.getRootNode().host.resetFilters()">Limpar</button>
         </div>
 
         <div class="search-wrapper">
-          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" name="busca" placeholder="O que você procura?" value="${this.state.busca}" oninput="this.getRootNode().host.handleInputChange(event)">
+          <input type="text" name="busca" placeholder="Filtro rápido..." value="${this.state.busca}" oninput="this.getRootNode().host.handleInputChange(event)">
         </div>
 
         <div class="section">
           <span class="section-title">Categoria Principal</span>
           <select name="categoria" onchange="this.getRootNode().host.handleInputChange(event)">
-            <option value="">Todas as Categorias</option>
-            <option value="empresas" ${this.state.categoria === 'empresas' ? 'selected' : ''}>Compra e Venda de Empresas</option>
-            <option value="investimentos" ${this.state.categoria === 'investimentos' ? 'selected' : ''}>Investimentos</option>
-            <option value="franquias" ${this.state.categoria === 'franquias' ? 'selected' : ''}>Franquias</option>
-            <option value="startups" ${this.state.categoria === 'startups' ? 'selected' : ''}>Startups</option>
+            <option value="">Todas as Oportunidades</option>
+            <option value="buying-selling" ${this.state.categoria === 'buying-selling' ? 'selected' : ''}>Compra e Venda de Empresas</option>
+            <option value="investments" ${this.state.categoria === 'investments' ? 'selected' : ''}>Investimentos</option>
+            <option value="franchise" ${this.state.categoria === 'franchise' ? 'selected' : ''}>Franquias e Licenciamento</option>
+            <option value="startups" ${this.state.categoria === 'startups' ? 'selected' : ''}>Projetos e Startups</option>
+            <option value="assets" ${this.state.categoria === 'assets' ? 'selected' : ''}>Ativos e Estruturas</option>
+            <option value="services" ${this.state.categoria === 'services' ? 'selected' : ''}>Serviços e Consultoria</option>
+            <option value="real-estate" ${this.state.categoria === 'real-estate' ? 'selected' : ''}>Imóveis para Negócios</option>
+            <option value="premium" ${this.state.categoria === 'premium' ? 'selected' : ''}>Oportunidades Premium</option>
+            <option value="partnership" ${this.state.categoria === 'partnership' ? 'selected' : ''}>Divulgação e Parcerias</option>
           </select>
         </div>
+
+        ${availableSubcategories.length > 0 ? `
+        <div class="section">
+          <span class="section-title">Subcategoria</span>
+          <select name="subcategoria" onchange="this.getRootNode().host.handleInputChange(event)">
+            <option value="">Todas as Subcategorias</option>
+            ${availableSubcategories.map(sub => `
+              <option value="${sub.value}" ${this.state.subcategoria === sub.value ? 'selected' : ''}>${sub.label}</option>
+            `).join('')}
+          </select>
+        </div>
+        ` : ''}
 
         <div class="section">
           <div class="price-header">
             <span>R$ 0</span>
-            <span style="color: #12b3af">Faixa de Preço</span>
+            <span style="color: #12b3af">Faixa de Investimento</span>
             <span>R$ 1B+</span>
           </div>
           <input type="range" name="rangeValue" min="0" max="1000000000" step="1000000" value="${this.state.rangeValue}" oninput="this.getRootNode().host.handleInputChange(event)">
@@ -446,52 +537,16 @@ class FinanhubFilter extends HTMLElement {
         </div>
 
         <div class="section">
-          <span class="section-title">Modelo de Negócio</span>
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <select name="modeloNegocio" onchange="this.getRootNode().host.handleInputChange(event)">
-              <option value="">Todos os Modelos</option>
-              <option value="B2B" ${this.state.modeloNegocio === 'B2B' ? 'selected' : ''}>B2B</option>
-              <option value="B2C" ${this.state.modeloNegocio === 'B2C' ? 'selected' : ''}>B2C</option>
-              <option value="SaaS" ${this.state.modeloNegocio === 'SaaS' ? 'selected' : ''}>SaaS</option>
-            </select>
-            <select name="tipoOportunidade" onchange="this.getRootNode().host.handleInputChange(event)">
-              <option value="">Tipo de Oportunidade</option>
-              <option value="venda" ${this.state.tipoOportunidade === 'venda' ? 'selected' : ''}>Venda Total</option>
-              <option value="equity" ${this.state.tipoOportunidade === 'equity' ? 'selected' : ''}>Venda Parcial (Equity)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="section">
-          <span class="section-title">Qualidade do Ativo</span>
+          <span class="section-title">Certificações</span>
           <div class="checkbox-container">
             <label class="checkbox-item">
-              <span>Verificado</span>
+              <span>Empresa Verificada</span>
               <input type="checkbox" name="verificado" ${this.state.verificado ? 'checked' : ''} onchange="this.getRootNode().host.handleInputChange(event)">
             </label>
             <label class="checkbox-item">
-              <span>Due Diligence</span>
+              <span>Auditado / Due Diligence</span>
               <input type="checkbox" name="dueDiligence" ${this.state.dueDiligence ? 'checked' : ''} onchange="this.getRootNode().host.handleInputChange(event)">
             </label>
-          </div>
-        </div>
-
-        <div class="bottom-grid">
-          <div>
-            <span class="bottom-label">Score IA</span>
-            <select name="iaScore" style="font-size: 11px;" onchange="this.getRootNode().host.handleInputChange(event)">
-              <option value="">Qualquer</option>
-              <option value="80" ${this.state.iaScore === '80' ? 'selected' : ''}>80+</option>
-              <option value="60" ${this.state.iaScore === '60' ? 'selected' : ''}>60+</option>
-            </select>
-          </div>
-          <div>
-            <span class="bottom-label">Ordenar</span>
-            <select name="ordenarPor" style="font-size: 11px;" onchange="this.getRootNode().host.handleInputChange(event)">
-              <option value="recentes" ${this.state.ordenarPor === 'recentes' ? 'selected' : ''}>Recentes</option>
-              <option value="preco_menor" ${this.state.ordenarPor === 'preco_menor' ? 'selected' : ''}>Menor Preço</option>
-              <option value="preco_maior" ${this.state.ordenarPor === 'preco_maior' ? 'selected' : ''}>Maior Preço</option>
-            </select>
           </div>
         </div>
 

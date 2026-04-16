@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { LeadsService } from '@/services/leads.service';
 import { Lead } from '@shared/contracts';
+import { useNotificationStore } from '@/store/useNotificationStore';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -50,12 +51,15 @@ function StatCard({ label, value, icon: Icon, color }: any) {
 
 export default function AdminLeadsPage() {
   useAuthGuard(); // Idealmente adicionaria restrição ADMIN aqui
+  const { show } = useNotificationStore();
 
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<any>(null);
   
   // Modals / Selection
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
@@ -63,15 +67,22 @@ export default function AdminLeadsPage() {
   const [savingNotes, setSavingNotes] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
-  const loadLeads = async () => {
+  const loadLeads = async (pageToLoad = 1) => {
     setLoading(true);
     try {
-      const data = await LeadsService.getAdminLeads({
+      const response = await LeadsService.getAdminLeads({
         search: searchTerm || undefined,
         status: statusFilter === 'all' ? undefined : statusFilter,
+        page: pageToLoad,
       });
-      console.log('Admin leads loaded:', data);
-      setLeads(Array.isArray(data) ? data : data.leads || []); // Fallback para diferentes formatos de resposta
+      console.log('Admin leads loaded:', response);
+      setLeads(response.data || []);
+      setPagination({
+        total: response.total,
+        page: response.page,
+        lastPage: response.lastPage
+      });
+      setPage(response.page);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Erro ao carregar Central de Leads.');
     } finally {
@@ -80,16 +91,17 @@ export default function AdminLeadsPage() {
   };
 
   useEffect(() => {
-    loadLeads();
-  }, [statusFilter]); // Recarrega ao mudar filtro. Search usaremos debounced ou manual.
+    loadLeads(1);
+  }, [statusFilter]);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     setUpdatingStatus(id);
     try {
       await LeadsService.updateLeadStatus(id, newStatus);
+      show('Status atualizado com sucesso!', 'success');
       await loadLeads();
     } catch (err) {
-      alert('Erro ao atualizar status.');
+      show('Erro ao atualizar status.', 'error');
     } finally {
       setUpdatingStatus(null);
     }
@@ -100,10 +112,11 @@ export default function AdminLeadsPage() {
     setSavingNotes(true);
     try {
       await LeadsService.updateLeadInternalNotes(selectedLead.id, notes);
+      show('Notas salvas com sucesso!', 'success');
       await loadLeads();
       setSelectedLead(null);
     } catch (err) {
-      alert('Erro ao salvar notas.');
+      show('Erro ao salvar notas.', 'error');
     } finally {
       setSavingNotes(false);
     }
@@ -111,8 +124,8 @@ export default function AdminLeadsPage() {
 
   // Stats calculate
   const stats = {
-    total: leads.length,
-    new: leads.filter(l => l.status === 'NEW').length,
+    total: pagination?.total || 0,
+    new: leads.filter(l => l.status === 'NEW').length, // Nota: Isso é apenas da página atual
     qualified: leads.filter(l => l.status === 'QUALIFIED').length,
     contacted: leads.filter(l => l.status === 'CONTACTED').length,
   };
@@ -311,6 +324,29 @@ export default function AdminLeadsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {pagination && pagination.lastPage > 1 && (
+          <div className="mt-8 flex items-center justify-center gap-2">
+            <button
+              onClick={() => loadLeads(page - 1)}
+              disabled={page === 1 || loading}
+              className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight className="w-5 h-5 rotate-180" />
+            </button>
+            <span className="text-sm font-bold text-slate-400">
+              Página <span className="text-white">{page}</span> de <span className="text-white">{pagination.lastPage}</span>
+            </span>
+            <button
+              onClick={() => loadLeads(page + 1)}
+              disabled={page === pagination.lastPage || loading}
+              className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         )}
 

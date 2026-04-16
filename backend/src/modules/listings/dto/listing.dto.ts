@@ -39,6 +39,19 @@ class ListingMediaDto {
   isCover?: boolean;
 }
 
+class AttributeValueDto {
+  @IsString()
+  attributeId: string;
+
+  @IsOptional()
+  @IsString()
+  valueStr?: string;
+
+  @IsOptional()
+  @IsNumber()
+  valueNum?: number;
+}
+
 export class CreateListingDto {
   @IsString()
   title: string;
@@ -97,7 +110,20 @@ export class CreateListingDto {
   @IsOptional() @IsString() nextSteps?: string;
   @IsOptional() @IsString() confidentialityNote?: string;
 
+  // Parcerias e Divulgação
+  @IsOptional() @IsString() partnershipType?: string;
+  @IsOptional() @IsString() partnershipObjective?: string;
+  @IsOptional() @IsString() offeringDescription?: string;
+  @IsOptional() @IsString() seekingDescription?: string;
+  @IsOptional() @IsString() partnershipSegment?: string;
+  @IsOptional() @IsString() audienceReach?: string;
+  @IsOptional() @IsString() channelsAvailable?: string;
+  @IsOptional() @IsString() partnershipFormat?: string;
+  @IsOptional() @IsString() expectedResults?: string;
+  @IsOptional() @IsString() companyDifferentials?: string;
+
   // SEO
+
   @IsOptional() @IsString() seoTitle?: string;
   @IsOptional() @IsString() seoKeywords?: string;
   @IsOptional() @IsString() seoDescription?: string;
@@ -125,6 +151,12 @@ export class CreateListingDto {
   @ValidateNested({ each: true })
   @Type(() => ListingMediaDto)
   media?: ListingMediaDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AttributeValueDto)
+  attrValues?: AttributeValueDto[];
 }
 
 export class UpdateListingDto extends CreateListingDto {}

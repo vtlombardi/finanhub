@@ -23,14 +23,23 @@ export class OpportunitiesService {
     };
 
     if (category) {
-      where.category = { name: { contains: category, mode: 'insensitive' } };
+      const isUuid = category.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      if (isUuid) {
+        where.categoryId = category;
+      } else {
+        where.category = { slug: category };
+      }
     }
 
     if (subcategory) {
-      // Assuming subcategory is a field or part of attributes. 
-      // For now, let's search in description or title if no specific field.
-      // Or if it's a category name too.
-      // Based on schema, subcategories aren't a separate model but we can filter by name.
+      const isUuid = subcategory.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      if (isUuid) {
+        where.categoryId = subcategory;
+      } else {
+        where.category = {
+          slug: subcategory
+        };
+      }
     }
 
     if (state) {
@@ -82,12 +91,11 @@ export class OpportunitiesService {
       id: l.id,
       title: l.title,
       category: l.category?.name || 'Geral',
-      subcategory: l.category?.name || 'Negócio', // Mapped from category for now
-      location: `${l.city || 'N/A'}, ${l.state || ''}`,
+      subcategory: l.category?.name || 'Negócio',
+      location: l.city && l.state ? `${l.city}, ${l.state}` : (l.state || l.city || 'Brasil'),
       price: l.price ? `R$ ${Number(l.price).toLocaleString('pt-BR')}` : 'Sob consulta',
-      rating: 4.5 + Math.random() * 0.5, // Mocked rating for UI consistency
       date: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(l.createdAt),
-      image: 'https://images.unsplash.com/photo-1551288560-199a5089e5cc?auto=format&fit=crop&q=80&w=800', // Default image
+      image: l.logoUrl || 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=800',
       verified: l.company?.isVerified || false,
       status: 'Ativo',
     }));

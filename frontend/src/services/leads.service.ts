@@ -3,8 +3,8 @@ import { Lead, Proposal } from '@shared/contracts';
 
 export class LeadsService {
   /** Vendedor vê leads recebidos */
-  static async getTenantLeads(): Promise<Lead[]> {
-    const response = await api.get<Lead[]>('/leads/tenant');
+  static async getTenantLeads(page = 1, limit = 10): Promise<any> {
+    const response = await api.get('/leads/tenant', { params: { page, limit } });
     return response.data;
   }
 
@@ -37,8 +37,8 @@ export class LeadsService {
   }
 
   /** Investidor vê seus interesses enviados */
-  static async getMyLeads(): Promise<Lead[]> {
-    const response = await api.get<Lead[]>('/leads/my');
+  static async getMyLeads(page = 1, limit = 10): Promise<any> {
+    const response = await api.get('/leads/my', { params: { page, limit } });
     return response.data;
   }
 

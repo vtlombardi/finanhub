@@ -22,25 +22,31 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
+    const exceptionResponse = 
       exception instanceof HttpException
         ? exception.getResponse()
         : { message: 'Erro interno do servidor', statusCode: status };
 
+    const message = typeof exceptionResponse === 'object' 
+      ? (exceptionResponse as any).message || 'Erro inesperado'
+      : exceptionResponse;
+
     const errorResponse = {
+      success: false,
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
-      error: typeof message === 'string' ? message : (message as any).message,
-      details: typeof message === 'object' ? message : null,
+      message: Array.isArray(message) ? message[0] : message, // Simplifica mensagens de validação
     };
 
-    // Log detalhado para o servidor
-    this.logger.error(
-      `[${request.method}] ${request.url} - Error: ${JSON.stringify(errorResponse)}`,
-      exception.stack,
-    );
+    // Log estruturado para o servidor
+    this.logger.error(JSON.stringify({
+      context: 'GlobalExceptionFilter',
+      ...errorResponse,
+      stack: exception.stack,
+      userId: (request as any).user?.id || 'anonymous',
+    }));
 
     response.status(status).json(errorResponse);
   }

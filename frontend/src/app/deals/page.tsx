@@ -17,8 +17,10 @@ import {
   MapPin,
   TrendingUp,
   Tag,
-  DollarSign
+  DollarSign,
+  HeartOff
 } from 'lucide-react';
+import { useNotificationStore } from '@/store/useNotificationStore';
 
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
@@ -51,6 +53,7 @@ const SORT_OPTIONS = [
 export default function DealsShowcasePage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { show } = useNotificationStore();
   
   const [showFilters, setShowFilters] = useState(false);
   const { 
@@ -79,11 +82,10 @@ export default function DealsShowcasePage() {
     }
     try {
       const res = await ListingsService.toggleFavorite(listingId);
-      // Aqui poderíamos usar um toast, mas manteremos o padrão para consistência
-      alert(res.favorited ? 'Adicionado aos favoritos!' : 'Removido dos favoritos.');
+      show(res.favorited ? 'Adicionado aos favoritos!' : 'Removido dos favoritos.', 'success');
       refresh();
     } catch {
-      alert('Falha ao atualizar favorito.');
+      show('Falha ao atualizar favorito.', 'error');
     }
   };
 

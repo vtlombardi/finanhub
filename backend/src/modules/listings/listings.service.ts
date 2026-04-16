@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { Queue } from 'bullmq';
 import { AnalyticsService } from '../analytics/analytics.service';
@@ -147,6 +147,9 @@ export class ListingsService {
           createdAt: true,
           isFeatured: true,
           featuredUntil: true,
+          logoUrl: true,
+          state: true,
+          city: true,
           tenant: { select: { name: true } },
           category: { select: { slug: true, name: true } },
         },
@@ -277,16 +280,125 @@ export class ListingsService {
     });
   }
 
-  async findMyListings(tenantId: string) {
-    // Retorna todos os estados do ativo para a empresa dona
-    return this.prisma.listing.findMany({
-      where: { tenantId },
-      include: {
-        category: { select: { name: true } }
+  async findMyListings(tenantId: string, filters: { q?: string; category?: string; status?: string; page?: number; limit?: number } = {}) {
+    const { q, category, status, page = 1, limit = 10 } = filters;
+    const where: any = { 
+      tenantId,
+      status: status ? (status as any) : { not: 'DELETED' }
+    };
+
+    if (q) {
+      where.OR = [
+        { title: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (category) {
+      where.categoryId = category;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.listing.findMany({
+        where,
+        include: {
+          category: { select: { name: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.listing.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' }
+    };
+  }
+
+  async duplicate(id: string, tenantId: string) {
+    const original = await this.prisma.listing.findFirst({
+      where: { id, tenantId },
+      include: {
+        attrValues: true,
+        features: true,
+        media: true,
+      }
+    });
+
+    if (!original) throw new NotFoundException('Anúncio original não encontrado.');
+
+    const { id: _, slug: __, createdAt: ___, updatedAt: ____, ...data } = original;
+
+    const newSlug = `${original.slug}-copy-${Date.now()}`;
+    const newTitle = `${original.title} (Cópia)`;
+
+    const duplicated = await this.prisma.listing.create({
+      data: {
+        ...data,
+        title: newTitle,
+        slug: newSlug,
+        status: 'DRAFT',
+        attrValues: {
+          create: original.attrValues.map(av => ({
+            attributeId: av.attributeId,
+            valueStr: av.valueStr,
+            valueNum: av.valueNum,
+            valueBool: av.valueBool,
+          }))
+        },
+        features: {
+          create: original.features.map(f => ({
+            name: f.name,
+            iconClass: f.iconClass,
+          }))
+        },
+        media: {
+          create: original.media.map(m => ({
+            url: m.url,
+            mediaType: m.mediaType,
+            isCover: m.isCover,
+          }))
+        }
+      }
+    });
+
+    return duplicated;
+  }
+
+  async softDelete(id: string, tenantId: string) {
+    const listing = await this.prisma.listing.findFirst({ where: { id, tenantId } });
+    if (!listing) throw new NotFoundException('Anúncio não encontrado.');
+
+    return this.prisma.listing.update({
+      where: { id },
+      data: { status: 'DELETED' }
     });
   }
+
+  async toggleStatus(id: string, tenantId: string, status: string) {
+    const listing = await this.prisma.listing.findFirst({ where: { id, tenantId } });
+    if (!listing) throw new NotFoundException('Anúncio não encontrado.');
+
+    const allowed = ['ACTIVE', 'INACTIVE', 'CLOSED', 'DRAFT'];
+    if (!allowed.includes(status)) {
+      throw new BadRequestException('Status não permitido para troca manual.');
+    }
+
+    return this.prisma.listing.update({
+      where: { id },
+      data: { status: status as any }
+    });
+  }
+
   /**
    * Detalhes públicos por slug.
    */
@@ -412,7 +524,7 @@ export class ListingsService {
 
   async createPrivately(data: any, operatorInfo: any) {
     // 1. Extração de relações
-    const { features, businessHours, media, ...rest } = data;
+    const { features, businessHours, media, attrValues, ...rest } = data;
 
     // 2. Criação Síncrona (Default: PENDING_AI_REVIEW)
     const newListing = await this.prisma.listing.create({
@@ -428,6 +540,9 @@ export class ListingsService {
         } : undefined,
         media: media ? {
           create: media
+        } : undefined,
+        attrValues: attrValues ? {
+          create: attrValues
         } : undefined,
       }
     });
@@ -452,7 +567,8 @@ export class ListingsService {
   async updatePrivately(id: string, tenantId: string, data: any) {
     // 1. Verifica existência e posse
     const existing = await this.prisma.listing.findFirst({
-      where: { id, tenantId }
+      where: { id, tenantId },
+      include: { category: true }
     });
 
     if (!existing) {
@@ -460,7 +576,120 @@ export class ListingsService {
     }
 
     // 2. Extração de relações para sync via "Delete & Create"
-    const { features, businessHours, media, ...rest } = data;
+    const { features, businessHours, media, attrValues, ...rest } = data;
+
+    // VALIDAÇÃO DE PADRÕES (Categorias Premium)
+    const newStatus = rest.status || existing.status;
+    const isFranchise = [
+      '803c2459-36d3-48d6-9ab0-ee82612a444d', // Franquias e Licenciamento
+      '0a824561-3252-47e9-92ca-c12aa047ec54',
+      'c34d9b4e-8d9c-4f0c-b5e7-2643b55c5dc3',
+      '77831699-f2de-4696-ac7f-5d7c48142738',
+      'aaf04626-e6bb-426b-9b9d-a0219a0462d6'
+    ].includes(rest.categoryId || existing.categoryId);
+
+    const isStartup = [
+      'e788eb9e-42fc-498d-9cd8-c3dcb4037bf9' // Startups e Tecnologia
+    ].includes(rest.categoryId || existing.categoryId);
+
+    const isAsset = [
+      '7c9b3a2e-5f1d-48c2-a9e0-81f9b3c4d5e6', // Ativos e Estruturas (Principal)
+      'a73557e0-24f2-45bc-ba28-65fe7fe122e7', // Maquinários e Equipamentos
+      'ac016e1a-4831-4d3f-9907-ea9ca06f437a', // Equipamentos Industriais
+      '6e008fb6-32f2-4c91-afe6-9084a70a740d'  // Frotas e Veículos
+    ].includes(rest.categoryId || existing.categoryId);
+
+    const isService = [
+      'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a', // Serviços e Consultoria (Principal)
+      'e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b', // Consultoria Estratégica
+      'f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c', // Consultoria Financeira
+      'a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d', // Serviços Operacionais
+      'b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e'  // Outsourcing e BPO
+    ].includes(rest.categoryId || existing.categoryId);
+
+    const isRealEstate = [
+      'e8a9b0c1-d2e3-4f4a-b5c6-d7e8f9a0b1c2' // Imóveis para Negócios
+    ].includes(rest.categoryId || existing.categoryId);
+
+    const isPremium = [
+      'p7e8f9a0-b1c2-4d3e-8f9a-0b1c2d3e4f5a' // Oportunidades Premium
+    ].includes(rest.categoryId || existing.categoryId);
+
+    const isPartnership = [
+      'b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e' // Divulgação e Parcerias
+    ].includes(rest.categoryId || existing.categoryId);
+
+    if (newStatus === 'ACTIVE') {
+
+      if (isFranchise) {
+        const requiredCount = 14;
+        const currentAttrs = attrValues || [];
+        if (currentAttrs.length < requiredCount) {
+          throw new BadRequestException(`Anúncios de Franquia exigem os ${requiredCount} indicadores financeiros completos antes de serem ativados.`);
+        }
+      }
+      if (isStartup) {
+        const requiredCount = 16;
+        const currentAttrs = attrValues || [];
+        if (currentAttrs.length < requiredCount) {
+          throw new BadRequestException(`Anúncios de Startups exigem os ${requiredCount} indicadores técnicos e de mercado completos antes de serem ativados.`);
+        }
+      }
+      if (isAsset) {
+        // Validação de Valor (Price) - Ponto crítico solicitado pelo usuário
+        const price = rest.price !== undefined ? rest.price : existing.price;
+        if (!price || Number(price) <= 0) {
+          throw new BadRequestException('Anúncios de Ativos exigem um Valor Estimado (Price) válido antes de serem ativados.');
+        }
+
+        const requiredCount = 8; // Mínimo de especificações técnicas
+        const currentAttrs = attrValues || [];
+        if (currentAttrs.length < requiredCount) {
+          throw new BadRequestException(`Anúncios de Ativos exigem pelo menos ${requiredCount} especificações técnicas completas antes de serem ativados.`);
+        }
+      }
+      if (isService) {
+        // Validação de Valor/Fee
+        const price = rest.price !== undefined ? rest.price : existing.price;
+        if (!price || Number(price) <= 0) {
+          throw new BadRequestException('Anúncios de Serviços exigem um Valor/Fee estimado antes de serem ativados.');
+        }
+
+        const requiredCount = 8; // Mínimo de indicadores de expertise e metodologia
+        const currentAttrs = attrValues || [];
+        if (currentAttrs.length < requiredCount) {
+          throw new BadRequestException(`Anúncios de Serviços exigem pelo menos ${requiredCount} indicadores de expertise e metodologia antes de serem ativados.`);
+        }
+      }
+      if (isRealEstate) {
+        // Validação de Valor do Imóvel
+        const price = rest.price !== undefined ? rest.price : existing.price;
+        if (!price || Number(price) <= 0) {
+          throw new BadRequestException('Anúncios de Imóveis exigem um Valor Estimado válido antes de serem ativados.');
+        }
+
+        const requiredCount = 10; // Mínimo de campos de localização e potencial
+        const currentAttrs = attrValues || [];
+        if (currentAttrs.length < requiredCount) {
+          throw new BadRequestException(`Anúncios de Imóveis exigem pelo menos ${requiredCount} indicadores técnicos (Zoneamento, Área, etc.) preenchidos antes de serem ativados.`);
+        }
+      }
+      if (isPremium) {
+        // Validação de Valor Mínimo para Premium
+        const price = rest.price !== undefined ? rest.price : existing.price;
+        if (!price || Number(price) <= 0) {
+          throw new BadRequestException('Oportunidades Premium exigem um Valor Estimado válido antes de serem ativados.');
+        }
+
+        const requiredCount = 10; // Mínimo de indicadores financeiros e estruturais
+        const currentAttrs = attrValues || [];
+        if (currentAttrs.length < requiredCount) {
+          throw new BadRequestException(`Oportunidades Premium exigem pelo menos ${requiredCount} indicadores financeiros e operacionais preenchidos antes de serem ativados.`);
+        }
+      }
+
+    }
+
 
     // 3. Execução em Transação (Atomicidade)
     return this.prisma.$transaction(async (tx) => {
@@ -473,6 +702,9 @@ export class ListingsService {
       }
       if (media) {
         await tx.listingMedia.deleteMany({ where: { listingId: id } });
+      }
+      if (attrValues) {
+        await tx.listingAttributeValue.deleteMany({ where: { listingId: id } });
       }
 
       // Se estava FLAGGED e o usuário corrigiu, re-aciona revisão AI
@@ -488,11 +720,19 @@ export class ListingsService {
           features: features ? { create: features } : undefined,
           businessHours: businessHours ? { create: businessHours } : undefined,
           media: media ? { create: media } : undefined,
+          attrValues: attrValues ? {
+            create: attrValues.map((av: any) => ({
+              attributeId: av.attributeId,
+              valueStr: av.valueStr,
+              valueNum: av.valueNum,
+            }))
+          } : undefined,
         },
         include: {
           features: true,
           businessHours: true,
-          media: true
+          media: true,
+          attrValues: { include: { attribute: true } }
         }
       });
 

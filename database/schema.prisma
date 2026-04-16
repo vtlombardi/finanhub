@@ -182,7 +182,21 @@ model Listing {
   valuationMethod     String?
   ebitda              Decimal?                @db.Decimal(15, 2)
   employeesCount      Int?
+  
+  // Campos de Divulgação e Parcerias
+  partnershipType      String?
+  partnershipObjective String?
+  offeringDescription  String?
+  seekingDescription   String?
+  partnershipSegment   String?
+  audienceReach        String?
+  channelsAvailable    String?
+  partnershipFormat    String?
+  expectedResults      String?
+  companyDifferentials String?
+
   aiInsights          AiInsight[]
+
   businessHours       BusinessHour[]
   chatThreads         ChatThread[]
   dataRoomDocs        DataRoomDocument[]
@@ -543,6 +557,7 @@ enum ListingStatus {
   FLAGGED
   SUSPENDED
   CLOSED
+  DELETED
 }
 
 enum ProposalStatus {

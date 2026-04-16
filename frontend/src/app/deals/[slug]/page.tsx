@@ -21,8 +21,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { DataRoomSection } from '@/components/deals/DataRoomSection';
-import { useAuth } from '@/features/auth/AuthProvider';
 import { useListingDetail } from '@/hooks/useListings';
+import { useNotificationStore } from '@/store/useNotificationStore';
 import Link from 'next/link';
 
 // ─── Components ──────────────────────────────────────────────────────────────
@@ -40,6 +40,7 @@ export default function DealDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { show } = useNotificationStore();
   const slug = params.slug as string;
 
   const { listing: deal, loading, error, refresh } = useListingDetail(slug);
@@ -76,9 +77,10 @@ export default function DealDetailPage() {
       setLeadSent(true);
       setLeadId(result.id);
       setShowLeadForm(false);
+      show('Interesse manifestado com sucesso!', 'success');
       // Ao manifestar interesse, já rolamos para a seção de sucessos/próximo passo
     } catch {
-      alert('Erro ao enviar manifestação de interesse.');
+      show('Erro ao enviar manifestação de interesse.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -93,8 +95,9 @@ export default function DealDetailPage() {
       await LeadsService.createProposal(leadId, value, proposalConditions || undefined);
       setProposalSent(true);
       setShowProposalForm(false);
+      show('Proposta enviada com sucesso!', 'success');
     } catch {
-      alert('Erro ao enviar proposta.');
+      show('Erro ao enviar proposta.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -104,9 +107,9 @@ export default function DealDetailPage() {
     if (!requireAuth() || !deal) return;
     try {
       const res = await ListingsService.toggleFavorite(deal.id);
-      alert(res.favorited ? 'Adicionado aos favoritos!' : 'Removido dos favoritos.');
+      show(res.favorited ? 'Adicionado aos favoritos!' : 'Removido dos favoritos.', 'success');
     } catch {
-      alert('Erro ao atualizar favoritos.');
+      show('Erro ao atualizar favoritos.', 'error');
     }
   };
 

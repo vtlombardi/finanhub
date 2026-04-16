@@ -1,0 +1,24 @@
+const MAPPING = {
+  category: 'Ativos e Estruturas',
+  mandatory_attributes: [
+    'assetType (Tipo de Ativo / Modelo)',
+    'assetLocation (Localização)',
+    'conservationState (Estado de Conservação)',
+    'availability (Disponibilidade)',
+    'fabricationYear (Ano de Fabricação)',
+    'productiveCapacity (Capacidade Técnica)',
+    'technicalInspection (Laudo Técnico)',
+    'documentationStatus (Status Documentação)'
+  ],
+  optional_attributes: [
+    'lastMaintenance (Última Manutenção)',
+    'warranty (Garantia)',
+    'logisticsNote (Nota Logística)',
+    'usageHistory (Histórico de Uso)',
+    'financingPossibility (Parcelamento)',
+    'includedItems (Itens Inclusos)'
+  ],
+  interface_alignment: 'Dashboard form fields use strictly these keys, mapped to DB UUIDs via ASSET_ATTR_MAP.'
+};
+
+console.log(JSON.stringify(MAPPING, null, 2));

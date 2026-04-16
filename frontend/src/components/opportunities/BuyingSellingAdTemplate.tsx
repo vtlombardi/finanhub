@@ -17,6 +17,7 @@ import {
 import { OpportunitySidebar } from '@/components/opportunities/OpportunitySidebar';
 import { OpportunityCard } from '@/components/opportunities/OpportunityCard';
 import { AdSummarySidebar } from './AdSummarySidebar';
+import { ListingImage } from '../common/ListingImage';
 import styles from '@/styles/fh-ad-detail.module.css';
 
 interface BuyingSellingAdTemplateProps {
@@ -129,9 +130,11 @@ export const BuyingSellingAdTemplate: React.FC<BuyingSellingAdTemplateProps> = (
                  {listing.verified && <span className="px-3 py-1 rounded-full bg-[#00b8b2]/20 backdrop-blur-md border border-[#00b8b2]/30 text-[10px] font-bold text-[#d8fffc] uppercase tracking-widest">Ativo Auditado</span>}
                </div>
 
-               <img 
-                 src={listing.logoUrl || "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80"} 
+               <ListingImage 
+                 src={listing.logoUrl || listing.imageUrl} 
+                 category={listing.category?.slug} 
                  alt={listing.title} 
+                 className="w-full h-full object-cover"
                />
             </div>
 

@@ -1,0 +1,454 @@
+/* 
+   Finanhub Premium Login - CSS Module
+   Escopo: Isolamento total para evitar conflitos com Tailwind/CSS Global
+   Estética: Institutional Luxury Minimalist
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+.fhLoginPage {
+  --fh-bg-deep: #01060f;
+  --fh-bg-panel: #07111e;
+  --fh-brand: #00b8b2;
+  --fh-brand-glow: rgba(0, 184, 178, 0.15);
+  --fh-text-main: #f1f5f9;
+  --fh-text-muted: #64748b;
+  --fh-text-ink: #0f172a;
+  --fh-card-bg: #ffffff;
+  --fh-border: rgba(255, 255, 255, 0.08);
+  --fh-shadow-premium: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
+  
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--fh-bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  color: var(--fh-text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Background Atmosphere */
+.fhLoginPage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 100%, var(--fh-brand-glow), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.fhLoginShell {
+  width: min(1200px, 95vw);
+  height: 820px;
+  background: var(--fh-bg-panel);
+  border: 1px solid var(--fh-border);
+  border-radius: 40px;
+  display: grid;
+  grid-template-columns: 45fr 55fr;
+  overflow: hidden;
+  box-shadow: var(--fh-shadow-premium);
+  position: relative;
+  z-index: 10;
+}
+
+/* --- PAINEL ESQUERDO (BRANDING) --- */
+.fhLoginBrandPanel {
+  background: linear-gradient(165deg, #07111e 0%, #020912 100%);
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid var(--fh-border);
+  position: relative;
+}
+
+.fhLoginBrandPanel::after {
+  content: "";
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 300px;
+  height: 300px;
+  background: var(--fh-brand);
+  filter: blur(150px);
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.brandTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brandLogo svg {
+  height: 32px;
+  width: auto;
+  filter: drop-shadow(0 0 10px rgba(0, 184, 178, 0.3));
+}
+
+.brandBadge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  color: var(--fh-brand);
+  opacity: 0.6;
+}
+
+.brandContent h1 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 52px;
+  font-weight: 300;
+  line-height: 1.1;
+  margin: 40px 0 24px;
+  letter-spacing: -0.02em;
+}
+
+.h1Accent {
+  color: var(--fh-brand);
+  font-weight: 600;
+}
+
+.lead {
+  font-size: 16px;
+  color: var(--fh-text-muted);
+  line-height: 1.8;
+  max-width: 380px;
+}
+
+.signalRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 40px;
+}
+
+.signal {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 8px 16px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--fh-text-muted);
+}
+
+.bottomCards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.miniCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 20px;
+  transition: transform 0.3s ease;
+}
+
+.miniCard:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.miniCard strong {
+  display: block;
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.miniCard span {
+  display: block;
+  font-size: 10px;
+  color: var(--fh-text-muted);
+  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* --- PAINEL DIREITO (FORMULÁRIO) --- */
+.fhLoginFormPanel {
+  background-color: var(--fh-card-bg);
+  padding: 60px 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.formWrap {
+  width: 100%;
+  max-width: 400px;
+}
+
+.topChip {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  color: var(--fh-brand);
+  margin-bottom: 16px;
+}
+
+.fhLoginFormPanel h2 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 36px;
+  font-weight: 400;
+  color: var(--fh-text-ink);
+  margin: 0 0 12px;
+}
+
+.subtext {
+  font-size: 14px;
+  color: var(--fh-text-muted);
+  margin-bottom: 40px;
+}
+
+.field {
+  margin-bottom: 24px;
+}
+
+.field label {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.inputWrap {
+  position: relative;
+}
+
+.inputWrap svg {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #cbd5e1;
+  transition: color 0.3s ease;
+}
+
+.fhLoginPage input {
+  width: 100%;
+  height: 60px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 0 20px 0 54px;
+  font-size: 15px;
+  color: var(--fh-text-ink);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.fhLoginPage input::placeholder {
+  color: #94a3b8;
+}
+
+.fhLoginPage input:focus {
+  background: #fff;
+  border-color: var(--fh-brand);
+  box-shadow: 0 0 0 4px rgba(0, 184, 178, 0.1);
+}
+
+.fhLoginPage input:focus + svg {
+  color: var(--fh-brand);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 24px 0 32px;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--fh-text-muted);
+  cursor: pointer;
+}
+
+.remember input {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+}
+
+.fhLoginPage a {
+  font-size: 13px;
+  color: var(--fh-brand);
+  text-decoration: none;
+  font-weight: 600;
+  transition: opacity 0.3s ease;
+}
+
+.fhLoginPage a:hover {
+  opacity: 0.7;
+}
+
+.submitButton {
+  width: 100%;
+  height: 60px;
+  background: var(--fh-brand);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 20px 40px -10px rgba(0, 184, 178, 0.3);
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 25px 50px -12px rgba(0, 184, 178, 0.4);
+}
+
+.submitButton:disabled {
+  background: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 32px 0;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.divider::before, .divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #f1f5f9;
+}
+
+.ghostButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  color: var(--fh-text-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none !important;
+  transition: all 0.3s ease;
+}
+
+.ghostButton:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.foot {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--fh-text-muted);
+}
+
+.foot a {
+  color: var(--fh-text-muted);
+  text-decoration: underline;
+  font-weight: inherit;
+}
+
+/* States */
+.errorBox {
+  padding: 16px;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 12px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.successBox {
+  padding: 16px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 12px;
+  color: #10b981;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: fh-spin 0.8s linear infinite;
+}
+
+@keyframes fh-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsividade */
+@media (max-width: 1100px) {
+  .fhLoginShell {
+    height: auto;
+    grid-template-columns: 1fr;
+    border-radius: 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .fhLoginBrandPanel {
+    padding: 30px;
+  }
+  .fhLoginBrandPanel h1 {
+    font-size: 36px;
+  }
+  .signalRow {
+    flex-wrap: wrap;
+  }
+  .bottomCards {
+    grid-template-columns: 1fr;
+  }
+  .fhLoginFormPanel {
+    padding: 40px 24px;
+  }
+  .fhLoginFormPanel h2 {
+    font-size: 28px;
+  }
+}

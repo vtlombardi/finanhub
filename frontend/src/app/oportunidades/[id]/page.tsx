@@ -30,16 +30,25 @@ import { Header as PublicHeader } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { DataRoomSection } from '@/components/deals/DataRoomSection';
 import { BuyingSellingAdTemplate } from '@/components/opportunities/BuyingSellingAdTemplate';
+import { InvestmentAdTemplate } from '@/components/opportunities/InvestmentAdTemplate';
+import { FranchiseAdTemplate } from '@/components/opportunities/FranchiseAdTemplate';
+import { StartupAdTemplate } from '@/components/opportunities/StartupAdTemplate';
+import { AssetAdTemplate } from '@/components/opportunities/AssetAdTemplate';
+import { ServiceAdTemplate } from '@/components/opportunities/ServiceAdTemplate';
+import { RealEstateAdTemplate } from '@/components/opportunities/RealEstateAdTemplate';
+import { PremiumAdTemplate } from '@/components/opportunities/PremiumAdTemplate';
+import { PartnershipAdTemplate } from '@/components/opportunities/PartnershipAdTemplate';
+
 
 // Types (assuming they are defined or can be inferred)
 interface Listing {
   id: string;
   title: string;
-  category?: { name: string };
+  category?: { name: string, slug?: string };
   city: string;
   state: string;
   createdAt: string;
-  price: string;
+  price: string | number;
   logoUrl?: string;
   revenue?: string;
   ebitda?: string;
@@ -47,6 +56,12 @@ interface Listing {
   description: string;
   features?: { name: string }[];
   matchScore?: number;
+  verified?: boolean;
+  subtitle?: string;
+  operationStructure?: string;
+  annualRevenue?: string | number;
+  ebitdaMargin?: string | number;
+  attrValues?: any[];
   company?: {
     name: string;
     isVerified: boolean;
@@ -57,6 +72,20 @@ interface Listing {
     dealsCount?: number;
     bio?: string;
   };
+  // Real Estate Fields
+  totalArea?: string | number;
+  propertyType?: string;
+  zoning?: string;
+  parkingSpaces?: string;
+  infrastructureLevel?: string;
+  strategicValue?: string;
+  physicalStructure?: string;
+  logisticsNote?: string;
+  adaptationPossible?: string;
+  negotiationTerms?: string;
+  availability?: string;
+  idealPurpose?: string;
+  isRental?: boolean;
 }
 
 function MetricCard({ label, value, icon: Icon }: { label: string; value: string; icon: any }) {
@@ -103,47 +132,25 @@ export default function OpportunityDetailPage() {
 
   useEffect(() => {
     async function fetchDetail() {
-      // Suporte para modo demo
-      if (id === 'demo') {
-        setListing({
-          id: 'demo-123',
-          title: 'SaaS de Logística Inteligente - Expansão Global',
-          subtitle: 'Empresa SaaS High-Growth',
-          description: 'Esta é uma oportunidade de investimento em um SaaS de logística que utiliza IA para otimização de rotas. Com mais de 200 clientes ativos, a plataforma apresenta escala global.',
-          price: 15000000,
-          annualRevenue: 4200000,
-          ebitda: 840000,
-          ebitdaMargin: 20,
-          category: { name: 'Compra e Venda de Empresas' },
-          subcategory: { name: 'Venda de Empresa' },
-          city: 'São Paulo',
-          state: 'SP',
-          createdAt: new Date().toISOString(),
-          operationStructure: 'Venda de 100% das Cotas',
-          verified: true,
-          company: {
-            name: 'NexCapital Tech',
-            isVerified: true
-          }
-        } as any);
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
-        // Lógica inteligente: Se parece UUID busca por ID, senão por Slug
-        const isUuid = id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+        setError(null);
+
+        let data = await ListingsService.getListingById(id).catch(() => null);
         
-        const data = isUuid 
-          ? await ListingsService.getListingById(id)
-          : await ListingsService.getListingBySlug(id);
+        if (!data) {
+          data = await ListingsService.getListingBySlug(id).catch(() => null);
+        }
           
+        if (!data) {
+          throw new Error('Anúncio não encontrado');
+        }
+
         setListing(data);
         
         // Buscar similares
         const similar = await ListingsService.getSimilar(data.id);
-        setSimilarOpportunities(similar);
+        setSimilarOpportunities(similar || []);
 
         // Se logado, verificar se está nos favoritos
         if (isAuthenticated) {
@@ -152,8 +159,8 @@ export default function OpportunityDetailPage() {
           setIsFavorited(isFav);
         }
       } catch (err) {
+        console.error('Erro ao carregar detalhes:', err);
         setError('Não foi possível carregar os detalhes desta oportunidade.');
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -228,16 +235,232 @@ export default function OpportunityDetailPage() {
     );
   }
 
-  // REGRA DE RENDERIZAÇÃO: Categoria "Compra e Venda de Empresas" e subcategorias relacionadas
+  // REGRA DE RENDERIZAÇÃO: Detecção de Categoria
   const categoryName = listing.category?.name?.toLowerCase() || '';
+  const categorySlug = (listing.category as any)?.slug?.toLowerCase() || '';
+  const categoryId = listing.categoryId;
+
+  // RENDER RULES: Standardized by Slugs & Standard IDs
+  const isInvestment = categorySlug === 'investments' || categoryName.includes('investimento');
+  
+  const isFranchise = 
+    categorySlug === 'franchise' || 
+    categorySlug.includes('franquia') || 
+    categorySlug.includes('licenciamento') ||
+    categoryId === '803c2459-36d3-48d6-9ab0-ee82612a444d';
+
+  const isStartup = 
+    categorySlug === 'startups' || 
+    categorySlug.includes('startup') ||
+    categoryId === 'e788eb9e-42fc-498d-9cd8-c3dcb4037bf9';
+
+  const isAsset = 
+    categorySlug === 'assets' || 
+    categorySlug.includes('ativo') ||
+    categorySlug.includes('maquinario') ||
+    categoryId === '7c9b3a2e-5f1d-48c2-a9e0-81f9b3c4d5e6';
+
+  const isService = 
+    categorySlug === 'services' || 
+    categorySlug.includes('servico') ||
+    categorySlug.includes('consultoria') ||
+    categoryId === 'd4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a';
+
+  const isRealEstate = 
+    categorySlug === 'real-estate' || 
+    categorySlug.includes('imoveis') ||
+    categoryId === 'e8a9b0c1-d2e3-4f4a-b5c6-d7e8f9a0b1c2';
+
+  const isPremium = 
+    categorySlug === 'premium' || 
+    categoryId === 'p7e8f9a0-b1c2-4d3e-8f9a-0b1c2d3e4f5a';
+
+  const isPartnership = 
+    categorySlug === 'partnership' || 
+    categorySlug.includes('parceria') ||
+    categoryId === 'b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e';
+
   const isBuyingSellingCategory = 
-    categoryName.includes('compra e venda') || 
-    categoryName.includes('venda de empresas') || 
-    categoryName.includes('compra de empresas') || 
-    categoryName.includes('venda de empresa') || 
-    categoryName.includes('compra de empresa') || 
-    categoryName.includes('sociedades') || 
-    categoryName.includes('arrendamento');
+    categorySlug === 'buying-selling' || 
+    categorySlug.includes('compra-venda') ||
+    categoryId === 'c2d3ef6c-e85e-407e-a4cf-0cd447fbee2f';
+
+  if (isPremium) {
+    return (
+      <>
+        <PublicHeader />
+        <PremiumAdTemplate 
+          listing={listing}
+          similarOpportunities={similarOpportunities}
+          onInterest={() => handleOpenLeadModal('Demonstração de Interesse')}
+          onFavorite={handleToggleFavorite}
+          isFavorited={isFavorited}
+          onFilterChange={handleFilterRedirect}
+        />
+        <LeadInterestModal 
+          isOpen={isLeadModalOpen}
+          onClose={() => setIsLeadModalOpen(false)}
+          listing={listing}
+        />
+        <Footer />
+      </>
+    );
+  }
+
+  if (isPartnership) {
+    return (
+      <>
+        <PublicHeader />
+        <PartnershipAdTemplate 
+          listing={listing}
+          similarOpportunities={similarOpportunities}
+          onInterest={() => handleOpenLeadModal('Demonstração de Interesse')}
+          onFavorite={handleToggleFavorite}
+          isFavorited={isFavorited}
+          onFilterChange={handleFilterRedirect}
+        />
+        <LeadInterestModal 
+          isOpen={isLeadModalOpen}
+          onClose={() => setIsLeadModalOpen(false)}
+          listing={listing}
+        />
+        <Footer />
+      </>
+    );
+  }
+
+
+  if (isRealEstate) {
+    return (
+      <>
+        <PublicHeader />
+        <RealEstateAdTemplate 
+          listing={listing}
+          similarOpportunities={similarOpportunities}
+          onInterest={() => handleOpenLeadModal('Demonstração de Interesse')}
+          onFavorite={handleToggleFavorite}
+          isFavorited={isFavorited}
+          onFilterChange={handleFilterRedirect}
+        />
+        <LeadInterestModal 
+          isOpen={isLeadModalOpen}
+          onClose={() => setIsLeadModalOpen(false)}
+          listing={listing}
+        />
+        <Footer />
+      </>
+    );
+  }
+
+  if (isAsset) {
+    return (
+      <>
+        <PublicHeader />
+        <AssetAdTemplate 
+          listing={listing}
+          similarOpportunities={similarOpportunities}
+          onInterest={() => handleOpenLeadModal('Demonstração de Interesse')}
+          onFavorite={handleToggleFavorite}
+          isFavorited={isFavorited}
+          onFilterChange={handleFilterRedirect}
+        />
+        <LeadInterestModal 
+          isOpen={isLeadModalOpen}
+          onClose={() => setIsLeadModalOpen(false)}
+          listing={listing}
+        />
+        <Footer />
+      </>
+    );
+  }
+
+  if (isService) {
+    return (
+      <>
+        <PublicHeader />
+        <ServiceAdTemplate 
+          listing={listing}
+          similarOpportunities={similarOpportunities}
+          onInterest={() => handleOpenLeadModal('Solicitação de Proposta')}
+          onFavorite={handleToggleFavorite}
+          isFavorited={isFavorited}
+          onFilterChange={handleFilterRedirect}
+        />
+        <LeadInterestModal 
+          isOpen={isLeadModalOpen}
+          onClose={() => setIsLeadModalOpen(false)}
+          listing={listing}
+        />
+        <Footer />
+      </>
+    );
+  }
+
+  if (isInvestment) {
+    return (
+      <>
+        <PublicHeader />
+        <InvestmentAdTemplate 
+          listing={listing}
+          similarOpportunities={similarOpportunities}
+          onInterest={() => handleOpenLeadModal('Solicitação de Análise')}
+          onFavorite={handleToggleFavorite}
+          isFavorited={isFavorited}
+          onFilterChange={handleFilterRedirect}
+        />
+        <LeadInterestModal 
+          isOpen={isLeadModalOpen}
+          onClose={() => setIsLeadModalOpen(false)}
+          listing={listing}
+        />
+        <Footer />
+      </>
+    );
+  }
+
+  if (isFranchise) {
+    return (
+      <>
+        <PublicHeader />
+        <FranchiseAdTemplate 
+          listing={listing}
+          similarOpportunities={similarOpportunities}
+          onInterest={() => handleOpenLeadModal('Solicitação de Análise')}
+          onFavorite={handleToggleFavorite}
+          isFavorited={isFavorited}
+          onFilterChange={handleFilterRedirect}
+        />
+        <LeadInterestModal 
+          isOpen={isLeadModalOpen}
+          onClose={() => setIsLeadModalOpen(false)}
+          listing={listing}
+        />
+        <Footer />
+      </>
+    );
+  }
+
+  if (isStartup) {
+    return (
+      <>
+        <PublicHeader />
+        <StartupAdTemplate 
+          listing={listing}
+          similarOpportunities={similarOpportunities}
+          onInterest={() => handleOpenLeadModal('Solicitação de Análise')}
+          onFavorite={handleToggleFavorite}
+          isFavorited={isFavorited}
+          onFilterChange={handleFilterRedirect}
+        />
+        <LeadInterestModal 
+          isOpen={isLeadModalOpen}
+          onClose={() => setIsLeadModalOpen(false)}
+          listing={listing}
+        />
+        <Footer />
+      </>
+    );
+  }
 
   if (isBuyingSellingCategory) {
     return (

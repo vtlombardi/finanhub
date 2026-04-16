@@ -20,6 +20,7 @@ import {
   X,
   ChevronRight,
 } from 'lucide-react';
+import { useNotificationStore } from '@/store/useNotificationStore';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export default function MessagesPage() {
   useAuthGuard();
   const { user } = useAuth();
   const { hasTier } = useSubscription();
+  const { show } = useNotificationStore();
 
   // Hooks de Chat
   const { threads, loading: loadingThreads, refresh: refreshThreads } = useChatThreads();
@@ -83,7 +85,7 @@ export default function MessagesPage() {
       refreshThreads();
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Erro ao enviar mensagem.';
-      alert(msg);
+      show(msg, 'error');
     } finally {
       inputRef.current?.focus();
     }
@@ -98,8 +100,9 @@ export default function MessagesPage() {
       await refreshThreads();
       setActiveThread(thread);
       setShowNewThread(false);
+      show('Conversa iniciada com sucesso!', 'success');
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Erro ao criar conversa.');
+      show(err?.response?.data?.message || 'Erro ao criar conversa.', 'error');
     } finally {
       setCreatingThread(false);
     }

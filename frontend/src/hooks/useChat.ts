@@ -9,13 +9,15 @@ import { ChatThread, ChatMessage } from '@shared/contracts';
  */
 export function useChatThreads() {
   const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [pagination, setPagination] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadThreads = useCallback(async () => {
+  const loadThreads = useCallback(async (page = 1, limit = 20) => {
     try {
-      const data = await ChatService.listThreads();
-      setThreads(data);
+      const response = await ChatService.listThreads(page, limit);
+      setThreads(response.data);
+      setPagination(response.pagination);
       setError(null);
     } catch (err) {
       console.error('Erro ao carregar threads:', err);
@@ -38,13 +40,14 @@ export function useChatThreads() {
  */
 export function useChatMessages(threadId?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [pagination, setPagination] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const lastFetchRef = useRef<number>(0);
 
-  const fetchMessages = useCallback(async (silent = false) => {
+  const fetchMessages = useCallback(async (page = 1, limit = 50, silent = false) => {
     if (!threadId) return;
     
     // Evita múltiplas chamadas simultâneas se já houver uma em andamento recentemente
@@ -54,8 +57,11 @@ export function useChatMessages(threadId?: string) {
     if (!silent) setLoading(true);
     
     try {
-      const data = await ChatService.getMessages(threadId);
-      setMessages(data);
+      const response = await ChatService.getMessages(threadId, page, limit);
+      // Para mensagens, geralmente queremos anexar se for polling? 
+      // Por enquanto, apenas substitui o que o backend retorna (50 últimas)
+      setMessages(response.data);
+      setPagination(response.pagination);
       lastFetchRef.current = Date.now();
       setError(null);
     } catch (err) {

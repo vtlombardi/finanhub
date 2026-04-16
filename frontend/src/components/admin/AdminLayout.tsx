@@ -41,6 +41,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   ];
 
   const adminSubmenu = [
+    { label: 'Visão Geral', href: '/dashboard/admin' },
     { label: 'Central de Leads', href: '/dashboard/admin/leads' },
     { label: 'Moderação', href: '/dashboard/moderation' },
     { label: 'Planos de Cobrança', href: '/dashboard/plans' },

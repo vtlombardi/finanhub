@@ -1,13 +1,14 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
+import { ListingImage } from '../common/ListingImage';
 
 export interface Opportunity {
   id: string;
   title: string;
   description: string;
-  category: string;
+  category: any;
+  categorySlug?: string;
   subcategory: string;
   location: string;
   price: string;
@@ -25,10 +26,15 @@ interface OpportunityCardProps {
 export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity }) => {
   return (
     <Link href={`/oportunidades/${opportunity.id}`} className="card">
-      {/* 1. Imagem com hover zoom */}
+      {/* 1. Imagem com triple fallback */}
       <div className="image-container">
-        <img src={opportunity.image} alt={opportunity.title} />
+        <ListingImage 
+          src={opportunity.image} 
+          category={opportunity.categorySlug} 
+          className="w-full h-full object-cover"
+        />
         <div className="image-overlay" />
+
         
         {/* Badges do Topo */}
         <div className="badges-container">
@@ -39,7 +45,14 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity })
           
           <div className="badge-right">
             {/* 3. Badge NOVO (Amarelo) - Simulado com base na data se necessário, mas fixo aqui por design */}
-            <span className="badge-new">NOVO</span>
+            {['Premium', 'premium', 'p7e8f9a0-b1c2-4d3e-8f9a-0b1c2d3e4f5a'].some(keyword => 
+              (typeof opportunity.category === 'string' && (opportunity.category === keyword || opportunity.category.includes(keyword))) ||
+              (typeof (opportunity.category as any).id === 'string' && (opportunity.category as any).id === keyword)
+            ) ? (
+              <span className="badge-new" style={{ background: 'linear-gradient(135deg, #00b8b2 0%, #008f8a 100%)', color: 'white' }}>PREMIUM</span>
+            ) : (
+              <span className="badge-new">NOVO</span>
+            )}
             {/* 4. Badge ATIVO (Cinza) */}
             <span className="badge-status">{opportunity.status}</span>
           </div>
@@ -62,7 +75,24 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity })
         
         {/* 7 & 8. Valor do Ativo destacado */}
         <div className="value-container group-hover:bg-[#00b8b2]/5 transition-all">
-          <span className="value-label text-[#00b8b2]">Valor do Ativo</span>
+          <span className="value-label text-[#00b8b2]">
+            {['Franquias', 'Licenciamento', 'franquias', 'licenciamento'].some(keyword => 
+              (typeof opportunity.category === 'string' && opportunity.category.includes(keyword)) ||
+              (typeof (opportunity.category as any).name === 'string' && (opportunity.category as any).name.includes(keyword))
+            ) ? 'Investimento' : 
+            ['Serviços', 'Consultoria', 'servico', 'consultoria'].some(keyword => 
+              (typeof opportunity.category === 'string' && opportunity.category.toLocaleLowerCase().includes(keyword)) ||
+              (typeof (opportunity.category as any).name === 'string' && (opportunity.category as any).name.toLocaleLowerCase().includes(keyword))
+            ) ? 'Valor do Fee' : 
+            ['Premium', 'premium', 'p7e8f9a0-b1c2-4d3e-8f9a-0b1c2d3e4f5a'].some(keyword => 
+              (typeof opportunity.category === 'string' && (opportunity.category === keyword || opportunity.category.includes(keyword))) ||
+              (typeof (opportunity.category as any).id === 'string' && (opportunity.category as any).id === keyword)
+            ) ? 'Expectativa de Valuation' : 
+            ['Parcerias', 'parceria', 'divulgacao', 'divulgação'].some(keyword => 
+              (typeof opportunity.category === 'string' && opportunity.category.toLocaleLowerCase().includes(keyword)) ||
+              (typeof (opportunity.category as any).name === 'string' && (opportunity.category as any).name.toLocaleLowerCase().includes(keyword))
+            ) ? 'Valor da Parceria' : 'Valor do Ativo'}
+          </span>
           <span className="value-amount">{opportunity.price}</span>
         </div>
 
@@ -73,10 +103,6 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity })
             <span className="text-[10px]">
               {typeof opportunity.location === 'object' ? (opportunity.location as any).name : opportunity.location}
             </span>
-          </div>
-          <div className="flex items-center gap-1.5 grayscale opacity-40">
-             <span className="text-[10px] lowercase font-medium">{(opportunity.rating || 0).toFixed(2)}</span>
-             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path></svg>
           </div>
         </div>
         
