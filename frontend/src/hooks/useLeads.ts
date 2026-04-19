@@ -26,6 +26,32 @@ export function useLeads() {
     load();
   }, [load]);
 
+  const updateLeadStatus = async (leadId: string, status: string) => {
+    try {
+      await LeadsService.updateStatus(leadId, status);
+      await load();
+      return { success: true };
+    } catch (err: any) {
+      return { 
+        success: false, 
+        message: err?.response?.data?.message || 'Erro ao atualizar status do lead.' 
+      };
+    }
+  };
+
+  const updateLeadNotes = async (leadId: string, notes: string) => {
+    try {
+      await LeadsService.updateNotes(leadId, notes);
+      await load();
+      return { success: true };
+    } catch (err: any) {
+      return { 
+        success: false, 
+        message: err?.response?.data?.message || 'Erro ao atualizar notas do lead.' 
+      };
+    }
+  };
+
   const updateProposalStatus = async (proposalId: string, status: 'ACCEPTED' | 'REJECTED') => {
     try {
       await LeadsService.updateProposalStatus(proposalId, status);
@@ -34,10 +60,10 @@ export function useLeads() {
     } catch (err: any) {
       return { 
         success: false, 
-        message: err?.response?.data?.message || 'Erro ao atualizar proposta.' 
+        message: err?.response?.data?.message || 'Erro ao atualizar status da proposta.' 
       };
     }
   };
 
-  return { leads, loading, error, refresh: load, updateProposalStatus };
+  return { leads, loading, error, refresh: load, updateProposalStatus, updateLeadStatus, updateLeadNotes };
 }

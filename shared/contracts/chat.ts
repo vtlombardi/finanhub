@@ -27,10 +27,11 @@ export interface ChatThread {
   id: string;
   tenantId: string;
   listingId?: string | null;
+  leadId?: string | null;
   updatedAt: string;
   createdAt: string;
   participants: ChatParticipant[];
-  messages?: ChatMessage[]; // Geralmente contém apenas a última mensagem na listagem
+  messages?: ChatMessage[];
   listing?: {
     id: string;
     title: string;
@@ -40,6 +41,7 @@ export interface ChatThread {
 export interface CreateThreadDto {
   targetAdminId?: string;
   listingId?: string;
+  leadId?: string;
 }
 
 export interface SendMessageDto {

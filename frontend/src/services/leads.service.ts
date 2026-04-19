@@ -50,14 +50,34 @@ export class LeadsService {
     return response.data;
   }
 
-  /** Atualiza status operacional do lead */
-  static async updateLeadStatus(id: string, status: string): Promise<Lead> {
+  /** Atualiza status do lead (Vendedor) */
+  static async updateStatus(id: string, status: string): Promise<Lead> {
+    const response = await api.patch<Lead>(`/leads/${id}/status`, { status });
+    return response.data;
+  }
+
+  /** Atualiza notas internas do lead (Vendedor) */
+  static async updateNotes(id: string, notes: string): Promise<Lead> {
+    const response = await api.patch<Lead>(`/leads/${id}/notes`, { notes });
+    return response.data;
+  }
+
+  /** --- ADMIN METHODS --- **/
+
+  /** Listagem global de leads com filtros e paginação */
+  static async getAdminLeads(params: any): Promise<any> {
+    const response = await api.get('/leads/admin', { params });
+    return response.data;
+  }
+
+  /** Atualiza status operacional do lead (Admin) */
+  static async adminUpdateStatus(id: string, status: string): Promise<Lead> {
     const response = await api.patch<Lead>(`/leads/admin/${id}/status`, { status });
     return response.data;
   }
 
-  /** Atualiza notas internas de mediação */
-  static async updateLeadInternalNotes(id: string, notes: string): Promise<Lead> {
+  /** Atualiza notas internas de mediação (Admin) */
+  static async adminUpdateInternalNotes(id: string, notes: string): Promise<Lead> {
     const response = await api.patch<Lead>(`/leads/admin/${id}/notes`, { notes });
     return response.data;
   }

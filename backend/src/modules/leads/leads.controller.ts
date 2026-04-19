@@ -69,6 +69,24 @@ export class LeadsController {
     );
   }
 
+  @Patch(':id/status')
+  async updateLeadStatus(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: UpdateLeadStatusDto,
+  ) {
+    return this.leadsService.updateLeadStatus(id, req.user.tenantId, req.user.userId, body);
+  }
+
+  @Patch(':id/notes')
+  async updateLeadNotes(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: UpdateLeadNotesDto,
+  ) {
+    return this.leadsService.updateLeadNotes(id, req.user.tenantId, req.user.userId, body);
+  }
+
   // --- ADMIN ROUTES ---
 
   @Get('admin')

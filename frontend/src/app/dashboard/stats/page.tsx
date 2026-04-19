@@ -1,26 +1,32 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { api } from '@/services/api.client';
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
-  ResponsiveContainer, CartesianGrid,
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import {
   TrendingUp, Eye, Users, DollarSign, Activity,
-  Download, Loader2, RefreshCw,
+  Download, Loader2, RefreshCw, Shield, Zap, Info, ArrowUpRight
 } from 'lucide-react';
+import styles from '@/styles/Dashboard.module.css';
+import { StatsKpis } from './components/StatsKpis';
+import { PremiumChart } from './components/PremiumChart';
+import { IntentAnalysis } from './components/IntentAnalysis';
+import { HayiaAdvisory } from './components/HayiaAdvisory';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Kpis {
   activeDeals: number;
   totalLeads: number;
-  totalProposals: number;
+  leadsVariation: number;
   monthlyViews: number;
+  viewsVariation: number;
   conversionRate: string;
+  conversionVariation: string;
+  potentialVolume: number;
 }
 
 interface TrendPoint {
@@ -29,9 +35,15 @@ interface TrendPoint {
   leads: number;
 }
 
+interface IntentPoint {
+  level: string;
+  count: number;
+}
+
 interface Summary {
   kpis: Kpis;
   trends: TrendPoint[];
+  intentDistribution: IntentPoint[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -41,40 +53,46 @@ function formatTrendDate(iso: string) {
   return `${day}/${month}`;
 }
 
-// Custom tooltip for recharts
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs shadow-xl">
-      <p className="text-slate-400 mb-1">{label}</p>
+    <div style={{ background: '#0a0f1d', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)' }}>
+      <p style={{ color: '#64748b', fontSize: '11px', margin: '0 0 12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Período: {label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} style={{ color: p.color }} className="font-semibold">
-          {p.name}: {p.value}
-        </p>
+        <div key={p.dataKey} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.color, boxShadow: `0 0 10px ${p.color}` }} />
+          <p style={{ color: '#fff', fontSize: '14px', margin: 0, fontWeight: 800 }}>
+            {p.name}: <span style={{ color: p.color }}>{p.value}</span>
+          </p>
+        </div>
       ))}
     </div>
   );
 }
 
-// ─── KPI Card ────────────────────────────────────────────────────────────────
-
 function KpiCard({
-  label, value, icon, sub,
+  label, value, icon, sub, color
 }: {
   label: string;
   value: string | number;
   icon: React.ReactNode;
   sub?: string;
+  color: string;
 }) {
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl px-5 py-4 flex items-start gap-4">
-      <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
+    <div className={styles.card} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(255,255,255,0.03)', background: 'rgba(255,255,255,0.01)' }}>
+      <div style={{ width: '40px', height: '40px', background: `${color}10`, borderRadius: '10px', display: 'grid', placeItems: 'center', color: color, border: `1px solid ${color}20` }}>
         {icon}
       </div>
       <div>
-        <p className="text-2xl font-bold text-white leading-none">{value}</p>
-        <p className="text-xs text-slate-500 mt-1">{label}</p>
-        {sub && <p className="text-[10px] text-slate-600 mt-0.5">{sub}</p>}
+        <p style={{ fontSize: '32px', fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.03em' }}>{value}</p>
+        <p style={{ fontSize: '11px', color: '#64748b', margin: '6px 0 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+        {sub && (
+           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px' }}>
+              <ArrowUpRight size={10} className="text-emerald-500" />
+              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700 }}>{sub} em relação a jan/26</span>
+           </div>
+        )}
       </div>
     </div>
   );
@@ -90,15 +108,16 @@ export default function StatsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
+  const [days, setDays] = useState(30);
 
-  const load = async (silent = false) => {
+  const load = async (silent = false, period = days) => {
     if (silent) setRefreshing(true); else setLoading(true);
     setError('');
     try {
-      const { data } = await api.get<Summary>('/dashboard/analytics/summary');
+      const { data } = await api.get<Summary>(`/dashboard/analytics/summary?days=${period}`);
       setSummary(data);
     } catch {
-      setError('Erro ao carregar métricas.');
+      setError('Falha na sincronização de inteligência operacional.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -106,6 +125,11 @@ export default function StatsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handlePeriodChange = (val: number) => {
+    setDays(val);
+    load(false, val);
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -119,7 +143,7 @@ export default function StatsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError('Erro ao exportar leads.');
+      setError('Erro na exportação do relatório.');
     } finally {
       setExporting(false);
     }
@@ -130,148 +154,120 @@ export default function StatsPage() {
     date: formatTrendDate(t.date),
   })) ?? [];
 
-  return (
-    <AdminLayout>
-      <div className="min-h-screen bg-[#020617] text-slate-100 p-6">
+  if (loading) {
+    return (
+      <div style={{ display: 'grid', placeItems: 'center', height: '100vh', background: '#05070a' }}>
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-[#00b8b2] animate-spin mx-auto mb-4" />
+          <p style={{ color: '#64748b', fontSize: '14px', fontWeight: 700 }}>Recalibrando Inteligência...</p>
+        </div>
+      </div>
+    );
+  }
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Activity className="w-6 h-6 text-blue-500" /> Métricas
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Performance do seu workspace nos últimos 30 dias.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => load(true)}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 px-3 py-2 rounded-xl border border-slate-700 hover:border-slate-600 transition disabled:opacity-40"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              Atualizar
-            </button>
-            <button
-              onClick={handleExport}
-              disabled={exporting || !summary}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition disabled:opacity-40"
-            >
-              {exporting
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <Download className="w-3.5 h-3.5" />
-              }
-              Exportar Leads CSV
-            </button>
+  if (error) {
+    return (
+      <div style={{ padding: '40px' }}>
+        <div style={{ padding: '24px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239,68,68,0.05)', color: '#ef4444', textAlign: 'center' }}>
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!summary) return null;
+
+  let advisoryInsight = "Estabilidade operacional detectada. Mantenha o fluxo de respostas constante para garantir a conversão dos leads ativos.";
+  if (summary.kpis.conversionRate === '0.00%') {
+    advisoryInsight = "Seu ativo está recebendo visualizações, mas a falta de leads sugere que o preço ou a descrição podem estar fora da expectativa do mercado. Considere ajustar o pitch.";
+  } else if (summary.kpis.leadsVariation > 20) {
+    advisoryInsight = "Excelente performance! Seu pipeline cresceu significativamente. Recomendamos priorizar os leads de Alta Intenção para conversões rápidas.";
+  } else if (summary.kpis.leadsVariation < -10) {
+    advisoryInsight = "Notamos uma queda no volume de novos leads. Isso pode ser sazonal ou reflexo de novos competidores. Reúna seus documentos no Data Room para aumentar a confiança.";
+  }
+
+  return (
+    <div className="p-0">
+      <div className={styles.pageHeader}>
+        <div>
+          <h1>Inteligência & Performance</h1>
+          <p>Visão estratégica consolidada e análise preditiva de ativos.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => load(true)}
+            disabled={refreshing}
+            className={styles.btnGhost}
+            style={{ height: '48px', padding: '0 20px', borderRadius: '12px' }}
+          >
+            <RefreshCw size={16} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Sincronizar Dados
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className={styles.btnBrand}
+            style={{ height: '48px', padding: '0 24px', borderRadius: '12px' }}
+          >
+            {exporting
+              ? <Loader2 size={16} className="mr-2 animate-spin" />
+              : <Download size={16} className="mr-2" />
+            }
+            Exportar Bi-Leads
+          </button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '32px', display: 'flex', gap: '8px' }}>
+        {[7, 30, 90].map((p) => (
+          <button
+            key={p}
+            onClick={() => handlePeriodChange(p)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              fontSize: '12px',
+              fontWeight: 800,
+              transition: 'all 0.2s',
+              background: days === p ? 'rgba(0,184,178,0.1)' : 'rgba(255,255,255,0.02)',
+              color: days === p ? '#00b8b2' : '#64748b',
+              border: `1px solid ${days === p ? 'rgba(0,184,178,0.2)' : 'rgba(255,255,255,0.05)'}`,
+            }}
+          >
+            Últimos {p} dias
+          </button>
+        ))}
+      </div>
+
+      <StatsKpis kpis={summary.kpis} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
+        <div className="col-span-1 lg:col-span-2 flex flex-col gap-8">
+          <PremiumChart data={summary.trends} />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <IntentAnalysis data={summary.intentDistribution} />
+            <div className={styles.card} style={{ padding: '32px' }}>
+               <div style={{ marginBottom: '32px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', margin: 0 }}>Distribuição Regional</h3>
+                  <p style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>Áreas com maior incidência de interesse.</p>
+               </div>
+               <div style={{ padding: '40px 0', textAlign: 'center', opacity: 0.4 }}>
+                  <Activity size={40} className="mx-auto mb-4 text-[#64748b]" />
+                  <p style={{ fontSize: '13px', fontWeight: 700 }}>Processando dados geográficos...</p>
+               </div>
+            </div>
           </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-          </div>
-        ) : summary ? (
-          <>
-            {/* KPI grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
-              <KpiCard
-                label="Deals ativos"
-                value={summary.kpis.activeDeals}
-                icon={<TrendingUp className="w-5 h-5 text-blue-400" />}
-              />
-              <KpiCard
-                label="Leads recebidos"
-                value={summary.kpis.totalLeads}
-                icon={<Users className="w-5 h-5 text-violet-400" />}
-              />
-              <KpiCard
-                label="Propostas formais"
-                value={summary.kpis.totalProposals}
-                icon={<DollarSign className="w-5 h-5 text-emerald-400" />}
-              />
-              <KpiCard
-                label="Views (30 dias)"
-                value={summary.kpis.monthlyViews}
-                icon={<Eye className="w-5 h-5 text-amber-400" />}
-                sub="visitas aos seus anúncios"
-              />
-              <KpiCard
-                label="Taxa de conversão"
-                value={summary.kpis.conversionRate}
-                icon={<Activity className="w-5 h-5 text-pink-400" />}
-                sub="views → leads"
-              />
-            </div>
-
-            {/* Trend chart */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-sm font-semibold text-white">Atividade — últimos 7 dias</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Visualizações e novos leads por dia</p>
-                </div>
-              </div>
-
-              {trendData.every(d => d.views === 0 && d.leads === 0) ? (
-                <div className="flex flex-col items-center justify-center h-48 text-slate-600">
-                  <Activity className="w-8 h-8 mb-2 opacity-40" />
-                  <p className="text-sm">Sem atividade nos últimos 7 dias.</p>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={trendData} barGap={4} barCategoryGap="30%">
-                    <CartesianGrid
-                      vertical={false}
-                      stroke="#1e293b"
-                      strokeDasharray="3 3"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 11, fill: '#64748b' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: '#64748b' }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={28}
-                      allowDecimals={false}
-                    />
-                    <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                    <Legend
-                      iconType="circle"
-                      iconSize={8}
-                      wrapperStyle={{ fontSize: '11px', color: '#94a3b8', paddingTop: '16px' }}
-                    />
-                    <Bar
-                      dataKey="views"
-                      name="Visualizações"
-                      fill="#3b82f6"
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={32}
-                    />
-                    <Bar
-                      dataKey="leads"
-                      name="Leads"
-                      fill="#8b5cf6"
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={32}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </>
-        ) : null}
+        <div className="col-span-1">
+          <HayiaAdvisory 
+            score={94.2} 
+            trend={summary.kpis.leadsVariation >= 0 ? `Tendência de Alta (+${summary.kpis.leadsVariation.toFixed(1)}%)` : `Tendência de Baixa (${summary.kpis.leadsVariation.toFixed(1)}%)`}
+            insight={advisoryInsight}
+          />
+        </div>
       </div>
-    </AdminLayout>
+    </div>
   );
 }

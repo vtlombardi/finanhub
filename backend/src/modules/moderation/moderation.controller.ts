@@ -1,8 +1,12 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ModerationService } from './moderation.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('moderation')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN', 'OWNER')
 export class ModerationController {
   constructor(private readonly moderationService: ModerationService) {}
 

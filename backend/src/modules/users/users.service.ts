@@ -183,15 +183,31 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        fullName: dto.name,
-        // email: dto.email, // E-mail update might require verification flow, kept simple for now
-        // avatar: dto.avatar, // Avatar support can be added if storage is ready
+        fullName: dto.fullName,
+        phonePrimary: dto.phonePrimary,
+        phoneSecondary: dto.phoneSecondary,
+        jobTitle: dto.jobTitle,
+        companyName: dto.companyName,
+        avatarUrl: dto.avatarUrl,
+        websiteUrl: dto.websiteUrl,
+        city: dto.city,
+        state: dto.state,
+        country: dto.country,
       },
       select: {
         id: true,
         email: true,
         fullName: true,
         role: true,
+        phonePrimary: true,
+        phoneSecondary: true,
+        jobTitle: true,
+        companyName: true,
+        avatarUrl: true,
+        websiteUrl: true,
+        city: true,
+        state: true,
+        country: true,
       },
     });
   }

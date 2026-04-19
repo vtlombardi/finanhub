@@ -6,17 +6,21 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotificationEvents } from '../notifications/notifications.events';
 import {
   RequestDataRoomAccessDto,
   UpdateDataRoomRequestDto,
   CreateDataRoomDocumentDto,
 } from './dto/dataroom.dto';
+import { DocCategory } from '@prisma/client';
 
 @Injectable()
 export class DataRoomService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   // ── Investor side ──────────────────────────────────────────────────────────
@@ -37,7 +41,6 @@ export class DataRoomService {
     });
 
     if (existing) {
-      // Return existing request — let frontend show current status
       return existing;
     }
 
@@ -50,7 +53,7 @@ export class DataRoomService {
       },
     });
 
-    // Notify tenant OWNER/ADMIN about the new request
+    // Notify tenant managers
     const tenantManagers = await this.prisma.user.findMany({
       where: { tenantId: listing.tenantId, role: { in: ['OWNER', 'ADMIN'] } },
       select: { id: true },
@@ -64,7 +67,56 @@ export class DataRoomService {
       { listingId: listing.id, requestId: request.id },
     );
 
+    // Emitir evento para notificações inteligentes HAYIA
+    this.eventEmitter.emit(NotificationEvents.DATAROOM_REQUESTED, { requestId: request.id });
+
     return request;
+  }
+
+  /** Investor accepts the NDA for a specific listing. */
+  async acceptNda(investorId: string, listingId: string) {
+    const request = await this.prisma.dataRoomRequest.findUnique({
+      where: { listingId_investorId: { listingId, investorId } },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Solicitação de acesso não encontrada.');
+    }
+
+    return this.prisma.dataRoomRequest.update({
+      where: { id: request.id },
+      data: { acceptedNdaAt: new Date() },
+    });
+  }
+
+  /** Logs that an investor opened a document. */
+  async logDocumentView(investorId: string, documentId: string) {
+    const doc = await this.prisma.dataRoomDocument.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!doc) throw new NotFoundException('Documento não encontrado.');
+
+    // Verify access
+    const request = await this.prisma.dataRoomRequest.findUnique({
+      where: { listingId_investorId: { listingId: doc.listingId, investorId } },
+    });
+
+    if (!request || request.status !== 'APPROVED') {
+      throw new ForbiddenException('Acesso não autorizado.');
+    }
+
+    const log = await this.prisma.dataRoomViewLog.create({
+      data: {
+        documentId,
+        investorId,
+      },
+    });
+
+    // Emitir evento para notificações inteligentes HAYIA
+    this.eventEmitter.emit(NotificationEvents.DATAROOM_VIEWED, { investorId, documentId });
+
+    return log;
   }
 
   /** Investor checks their own request status for a listing. */
@@ -74,7 +126,7 @@ export class DataRoomService {
     });
   }
 
-  /** Returns documents for an investor — only if their request is APPROVED. */
+  /** Returns documents for an investor — only if APPROVED and NDA accepted. */
   async getDocumentsForInvestor(investorId: string, listingId: string) {
     const request = await this.prisma.dataRoomRequest.findUnique({
       where: { listingId_investorId: { listingId, investorId } },
@@ -84,10 +136,16 @@ export class DataRoomService {
       throw new ForbiddenException('Acesso ao Data Room não autorizado.');
     }
 
-    return this.prisma.dataRoomDocument.findMany({
+    if (!request.acceptedNdaAt) {
+      throw new ForbiddenException('Aceite do NDA obrigatório para visualizar documentos.');
+    }
+
+    const docs = await this.prisma.dataRoomDocument.findMany({
       where: { listingId },
       orderBy: { createdAt: 'asc' },
     });
+
+    return docs;
   }
 
   // ── Seller side ────────────────────────────────────────────────────────────
@@ -101,6 +159,25 @@ export class DataRoomService {
         listing: { select: { id: true, title: true, slug: true } },
       },
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  /** Direct grant access for a lead (Seller proactively releasing). */
+  async grantDirectAccess(tenantId: string, listingId: string, investorId: string) {
+    const listing = await this.prisma.listing.findFirst({
+      where: { id: listingId, tenantId },
+    });
+    if (!listing) throw new NotFoundException('Listing não encontrado.');
+
+    return this.prisma.dataRoomRequest.upsert({
+      where: { listingId_investorId: { listingId, investorId } },
+      update: { status: 'APPROVED' },
+      create: {
+        tenantId,
+        listingId,
+        investorId,
+        status: 'APPROVED',
+      },
     });
   }
 
@@ -122,7 +199,6 @@ export class DataRoomService {
       data: { status: dto.status },
     });
 
-    // Notify investor of the decision
     const actionLabel = dto.status === 'APPROVED' ? 'aprovado' : 'rejeitado';
     await this.notifications.create(
       request.investorId,
@@ -159,14 +235,34 @@ export class DataRoomService {
     });
     if (!listing) throw new NotFoundException('Listing não encontrado ou acesso negado.');
 
+    const category = this.mapCategory(dto.category);
+
     return this.prisma.dataRoomDocument.create({
       data: {
         tenantId,
         listingId,
         name: dto.name,
         url: dto.url,
+        category,
         mediaType: dto.mediaType ?? 'document',
       },
+    });
+  }
+
+  /** Returns tracking logs for a listing. */
+  async getTrackingLogs(listingId: string, tenantId: string) {
+    const listing = await this.prisma.listing.findFirst({
+      where: { id: listingId, tenantId },
+    });
+    if (!listing) throw new ForbiddenException('Acesso negado.');
+
+    return this.prisma.dataRoomViewLog.findMany({
+      where: { document: { listingId } },
+      include: {
+        investor: { select: { fullName: true, email: true } },
+        document: { select: { name: true, category: true } },
+      },
+      orderBy: { viewedAt: 'desc' },
     });
   }
 
@@ -179,5 +275,14 @@ export class DataRoomService {
 
     await this.prisma.dataRoomDocument.delete({ where: { id: documentId } });
     return { deleted: true };
+  }
+
+  private mapCategory(cat?: string): DocCategory {
+    if (!cat) return DocCategory.OUTROS;
+    const normalized = cat.toUpperCase();
+    if (Object.values(DocCategory).includes(normalized as any)) {
+      return normalized as DocCategory;
+    }
+    return DocCategory.OUTROS;
   }
 }

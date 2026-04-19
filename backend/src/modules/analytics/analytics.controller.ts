@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Query } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -10,19 +10,23 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('summary')
-  @Roles('OWNER', 'ADMIN') // Apenas gestores veem o BI do tenant
-  async getSummary(@Request() req: any) {
-    return this.analyticsService.getSummary(req.user.tenantId);
+  @Roles('OWNER', 'ADMIN', 'USER')
+  async getSummary(
+    @Request() req: any,
+    @Query('days') days?: string
+  ) {
+    const range = days ? parseInt(days, 10) : 30;
+    return this.analyticsService.getSummary(req.user.tenantId, range);
   }
 
   @Get('trends')
-  @Roles('OWNER', 'ADMIN')
+  @Roles('OWNER', 'ADMIN', 'USER')
   async getTrends(@Request() req: any) {
     return this.analyticsService.getSummary(req.user.tenantId);
   }
 
   @Get('export/leads/csv')
-  @Roles('OWNER', 'ADMIN')
+  @Roles('OWNER', 'ADMIN', 'USER')
   async getLeadsCsv(@Request() req: any) {
     return this.analyticsService.exportLeadsToCsv(req.user.tenantId);
   }

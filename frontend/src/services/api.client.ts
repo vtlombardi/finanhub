@@ -23,9 +23,11 @@ api.interceptors.response.use(
     // 401: Unauthorized / Session Expired
     if (error.response?.status === 401) {
       Cookies.remove('finanhub.token');
-      useNotificationStore.getState().show('Sua sessão expirou. Por favor, faça login novamente.', 'warning');
       
-      if (typeof window !== 'undefined') {
+      const isDashboard = typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard');
+      
+      if (isDashboard) {
+        useNotificationStore.getState().show('Sua sessão expirou. Por favor, faça login novamente.', 'warning');
         const currentUrl = encodeURIComponent(window.location.pathname);
         window.location.href = `/login?redirect=${currentUrl}`;
       }

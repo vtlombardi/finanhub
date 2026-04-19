@@ -132,15 +132,15 @@ export class ChatService {
    * Cria uma nova thread (ex: suporte ou interesse em anúncio).
    * Verifica se já existe conversa ativa para o anúncio e usuário.
    */
-  async createThread(userId: string, tenantId: string, targetAdminId?: string, listingId?: string) {
-    // 1. Verificar se já existe uma thread para este usuário e anúncio
-    if (listingId) {
+  async createThread(userId: string, tenantId: string, targetAdminId?: string, listingId?: string, leadId?: string) {
+    // 1. Verificar se já existe uma thread para este usuário, anúncio e/ou lead
+    if (leadId || listingId) {
       const existingThread = await this.prisma.chatThread.findFirst({
         where: {
-          listingId,
-          participants: {
-            some: { userId: userId }
-          }
+          OR: [
+            leadId ? { leadId } : null,
+            listingId ? { listingId, participants: { some: { userId } } } : null,
+          ].filter(Boolean),
         }
       });
 
@@ -161,6 +161,7 @@ export class ChatService {
       data: {
         tenantId,
         listingId: listingId || undefined,
+        leadId: leadId || undefined,
         participants: {
           create: [
             { userId: userId },

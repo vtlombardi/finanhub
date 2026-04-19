@@ -498,9 +498,14 @@ export class ListingsService {
       where: { userId },
       include: {
         listing: {
-           include: { category: true, tenant: { select: { name: true } } }
+           include: { 
+             category: true, 
+             tenant: { select: { name: true } },
+             company: { select: { name: true, isVerified: true } }
+           }
         }
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     });
   }
 
@@ -524,7 +529,7 @@ export class ListingsService {
 
   async createPrivately(data: any, operatorInfo: any) {
     // 1. Extração de relações
-    const { features, businessHours, media, attrValues, ...rest } = data;
+    const { features, businessHours, media, attrValues, category, company, tenant, ...rest } = data;
 
     // 2. Criação Síncrona (Default: PENDING_AI_REVIEW)
     const newListing = await this.prisma.listing.create({
@@ -548,18 +553,20 @@ export class ListingsService {
     });
 
     // 3. Dispatch Motor AI (Async)
+    /*
     try {
-      await this.aiQueue.add('review-ad-job', {
+      this.aiQueue.add('review-ad-job', {
         listingId: newListing.id,
         tenantId: newListing.tenantId
       }, {
         attempts: 3,
         backoff: { type: 'exponential', delay: 2000 }
-      });
+      }).catch(e => console.error('[Queue Error] Falha ao enfileirar:', e));
       console.log(`[Queue] Listing ${newListing.id} enviada para Triagem AI.`);
     } catch (e) {
       console.error('[Queue Error] Falha ao injetar no Redis:', e);
     }
+    */
 
     return newListing;
   }
@@ -576,7 +583,7 @@ export class ListingsService {
     }
 
     // 2. Extração de relações para sync via "Delete & Create"
-    const { features, businessHours, media, attrValues, ...rest } = data;
+    const { features, businessHours, media, attrValues, category, company, tenant, ...rest } = data;
 
     // VALIDAÇÃO DE PADRÕES (Categorias Premium)
     const newStatus = rest.status || existing.status;
@@ -739,17 +746,20 @@ export class ListingsService {
       return updated;
     }).then(async (updated) => {
       // Enfileira fora da transação para não bloquear o commit
+      /*
       if (updated.status === 'PENDING_AI_REVIEW') {
         try {
-          await this.aiQueue.add('review-ad-job', {
-            listingId: updated.id,
-            tenantId: updated.tenantId,
-          }, { attempts: 3, backoff: { type: 'exponential', delay: 2000 } });
+        this.aiQueue.add('review-ad-job', {
+          listingId: updated.id,
+          tenantId: updated.tenantId,
+        }, { attempts: 3, backoff: { type: 'exponential', delay: 2000 } })
+        .catch(e => console.error('[Queue Error] Falha ao re-enfileirar:', e));
           console.log(`[Queue] Listing ${updated.id} re-enviada para triagem AI.`);
         } catch (e) {
           console.error('[Queue Error] Falha ao re-enfileirar:', e);
         }
       }
+      */
       return updated;
     });
   }

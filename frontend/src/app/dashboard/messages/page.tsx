@@ -7,7 +7,6 @@ import { useChatThreads, useChatMessages } from '@/hooks/useChat';
 import { ChatService } from '@/services/ChatService';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PlanGate } from '@/components/plans/PlanGate';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { ChatThread } from '@shared/contracts';
 import {
   Send,
@@ -18,21 +17,26 @@ import {
   Plus,
   Loader2,
   X,
+  Lock,
+  CheckCheck,
+  Zap,
+  MoreVertical,
   ChevronRight,
 } from 'lucide-react';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import styles from '@/styles/Dashboard.module.css';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getThreadName(thread: ChatThread, myId: string): string {
   if (thread.listing?.title) return thread.listing.title;
   const other = thread.participants?.find((p) => p.userId !== myId);
-  return other?.user?.fullName || 'Conversa';
+  return other?.user?.fullName || 'Conversa Estratégica';
 }
 
 function getThreadSub(thread: ChatThread, myId: string): string {
   const other = thread.participants?.find((p) => p.userId !== myId);
-  return other?.user?.email || '';
+  return other?.user?.email || 'Membro verificado';
 }
 
 function timeLabel(iso: string): string {
@@ -51,28 +55,23 @@ export default function MessagesPage() {
   const { hasTier } = useSubscription();
   const { show } = useNotificationStore();
 
-  // Hooks de Chat
   const { threads, loading: loadingThreads, refresh: refreshThreads } = useChatThreads();
   const [activeThread, setActiveThread] = useState<ChatThread | null>(null);
   const { messages, loading: loadingMessages, sending, sendMessage } = useChatMessages(activeThread?.id);
 
-  // Estados locais UI
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewThread, setShowNewThread] = useState(false);
   const [creatingThread, setCreatingThread] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll ao receber mensagens
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
-
-  // ── Envio ──────────────────────────────────────────────────────────────────
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,17 +80,13 @@ export default function MessagesPage() {
     try {
       await sendMessage(newMessage.trim());
       setNewMessage('');
-      // Atualiza timestamp da thread localmente para subir na lista
       refreshThreads();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Erro ao enviar mensagem.';
-      show(msg, 'error');
+      show(err?.response?.data?.message || 'Erro ao enviar mensagem.', 'error');
     } finally {
       inputRef.current?.focus();
     }
   };
-
-  // ── Nova conversa ──────────────────────────────────────────────────────────
 
   const handleCreateThread = async () => {
     setCreatingThread(true);
@@ -108,8 +103,6 @@ export default function MessagesPage() {
     }
   };
 
-  // ── Filtragem de threads ───────────────────────────────────────────────────
-
   const filteredThreads = threads.filter(t => {
     if (!searchQuery) return true;
     const name = getThreadName(t, user?.id ?? '').toLowerCase();
@@ -118,296 +111,253 @@ export default function MessagesPage() {
 
   const myId: string = user?.id ?? '';
 
-  // ─────────────────────────────────────────────────────────────────────────
-
   return (
-    <AdminLayout>
-      <div className="flex h-[calc(100vh-64px)] bg-[#020617] text-slate-100 overflow-hidden">
+    <>
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            Secure Deal Room Chat
+          </h1>
+          <p>Comunicação criptografada e institucional para investidores e decisores.</p>
+        </div>
+        <button
+          onClick={() => setShowNewThread(true)}
+          className={styles.btnBrand}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 24px', height: '48px' }}
+        >
+          <Plus size={18} /> Iniciar Negociação
+        </button>
+      </div>
 
-        {/* ── Sidebar: lista de threads ── */}
-        <aside className="w-72 border-r border-slate-800 flex flex-col shrink-0 bg-slate-950/30">
-
-          {/* Header */}
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-2">
-            <h2 className="text-base font-bold flex items-center gap-2 text-white">
-              <MessageSquare className="w-4 h-4 text-blue-500" /> Mensagens
-            </h2>
-            <button
-              onClick={() => setShowNewThread(true)}
-              className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
-              title="Nova conversa"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Search */}
-          <div className="px-3 py-2 border-b border-slate-800">
-            <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-800/50 rounded-lg px-3 py-2">
-              <Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+      <div className={styles.card} style={{ padding: 0, height: 'calc(100vh - 280px)', display: 'flex', overflow: 'hidden', minHeight: '600px' }}>
+        
+        {/* Thread Sidebar: High-Density & Semantic */}
+        <div style={{ width: '380px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.01)' }}>
+          
+          <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#475569]">
+                <Search size={16} />
+              </span>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Buscar conversa..."
-                className="bg-transparent text-xs text-slate-300 placeholder:text-slate-600 outline-none flex-1 min-w-0"
+                placeholder="Filtrar por nome ou ativo..."
+                className={styles.bConfig}
+                style={{ width: '100%', height: '44px', paddingLeft: '40px', background: 'rgba(0,0,0,0.3)', fontSize: '14px' }}
               />
             </div>
           </div>
 
-          {/* Thread list */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div style={{ flex: 1, overflowY: 'auto' }}>
             {loadingThreads ? (
-              <div className="flex flex-col items-center justify-center h-32 gap-3">
-                <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-                <span className="text-[10px] text-slate-500 uppercase tracking-widest">Carregando...</span>
+              <div style={{ padding: '60px', textAlign: 'center' }}>
+                <Loader2 className="w-8 h-8 text-[#00b8b2] animate-spin mx-auto" />
+                <p style={{ marginTop: '16px', fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Sincronizando Sessões...</p>
               </div>
             ) : filteredThreads.length === 0 ? (
-              <div className="text-center py-10 px-4">
-                <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <MessageSquare className="w-5 h-5 text-slate-700" />
-                </div>
-                <p className="text-xs text-slate-500 font-medium">
-                  {searchQuery ? 'Nenhum resultado.' : 'Nenhuma conversa ainda.'}
-                </p>
+              <div style={{ padding: '60px 40px', textAlign: 'center' }}>
+                 <div style={{ background: 'rgba(255,255,255,0.02)', width: '48px', height: '48px', borderRadius: '12px', margin: '0 auto 16px', display: 'grid', placeItems: 'center' }}>
+                    <MessageSquare size={20} style={{ color: '#475569' }} />
+                 </div>
+                 <p style={{ color: '#64748b', fontSize: '13px', fontWeight: 600 }}>Nenhuma negociação ativa.</p>
               </div>
             ) : (
               filteredThreads.map(t => {
                 const isActive = activeThread?.id === t.id;
-                const lastMsg = t.messages?.[0]; // Backend deve trazer a última mensagem
+                const lastMsg = t.messages?.[0];
                 return (
                   <button
                     key={t.id}
                     onClick={() => setActiveThread(t)}
-                    className={`w-full text-left px-4 py-4 transition-all border-b border-slate-800/40 relative group ${
-                      isActive ? 'bg-blue-600/10' : 'hover:bg-slate-800/30'
-                    }`}
+                    style={{ 
+                      width: '100%', 
+                      textAlign: 'left', 
+                      padding: '20px 24px', 
+                      borderBottom: '1px solid rgba(255,255,255,0.03)',
+                      background: isActive ? 'rgba(0,184,178,0.05)' : 'transparent',
+                      transition: '0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative'
+                    }}
+                    className="hover:bg-white/[0.02] group"
                   >
-                    {isActive && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />}
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                        isActive ? 'bg-blue-600/20 text-blue-400' : 'bg-slate-800 text-slate-500 group-hover:bg-slate-700'
-                      }`}>
-                        <User className="w-5 h-5" />
+                    {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: '#00b8b2', boxShadow: '2px 0 10px rgba(0,184,178,0.3)' }} />}
+                    <div className="flex items-center gap-4">
+                      <div style={{ width: '48px', height: '48px', background: isActive ? '#00b8b2' : 'rgba(255,255,0.03)', borderRadius: '14px', display: 'grid', placeItems: 'center', color: isActive ? '#fff' : '#475569', border: '1px solid rgba(255,255,255,0.05)', transition: '0.2s' }} className="group-hover:border-[#00b8b2]/30">
+                        <User size={22} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className={`text-sm font-semibold truncate ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 800, color: isActive ? '#fff' : '#eef6ff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {getThreadName(t, myId)}
                           </span>
-                          {lastMsg && (
-                            <span className="text-[10px] text-slate-600 shrink-0 font-medium">
-                              {timeLabel(lastMsg.createdAt)}
-                            </span>
-                          )}
+                          <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 800 }}>{lastMsg ? timeLabel(lastMsg.createdAt) : ''}</span>
                         </div>
-                        <p className="text-xs text-slate-500 truncate leading-snug">
-                          {lastMsg?.body || getThreadSub(t, myId) || 'Inicie a conversa...'}
+                        <p style={{ fontSize: '12px', color: isActive ? '#00b8b2' : '#8fa6c3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0, fontWeight: lastMsg?.senderId !== myId && !isActive ? 800 : 400 }}>
+                          {lastMsg?.body || 'Inicie a conversa...'}
                         </p>
                       </div>
                     </div>
                   </button>
-                );
+                )
               })
             )}
           </div>
-        </aside>
+        </div>
 
-        {/* ── Área de chat ── */}
-        <section className="flex-1 flex flex-col min-w-0 bg-[#020617]">
+        {/* Chat Body: Advanced Fidelity */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'rgba(0,0,0,0.2)' }}>
           {activeThread ? (
             <>
-              {/* Chat header */}
-              <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/40 backdrop-blur-xl flex items-center justify-between gap-4 shrink-0">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/10">
-                    <Shield className="w-5 h-5 text-white" />
+              {/* Institutional Header */}
+              <div style={{ padding: '20px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '44px', height: '44px', background: 'linear-gradient(135deg, #00b8b2 0%, #007672 100%)', borderRadius: '12px', display: 'grid', placeItems: 'center', boxShadow: '0 4px 15px rgba(0,184,178,0.2)' }}>
+                    <Lock size={18} className="text-white" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white truncate">
-                      {getThreadName(activeThread, myId)}
-                    </p>
-                    <p className="text-xs text-slate-500 truncate flex items-center gap-1.5 font-medium">
-                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                      {getThreadSub(activeThread, myId)}
-                    </p>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#fff' }}>{getThreadName(activeThread, myId)}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00b8b2' }}></div>
+                      <span style={{ fontSize: '11px', color: '#8fa6c3', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sessão Segura Ativa</span>
+                    </div>
                   </div>
                 </div>
-                
-                {/* Ações de Header (Opcional no futuro) */}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                   <button className={styles.btnGhost} style={{ width: '40px', height: '40px', padding: 0, display: 'grid', placeItems: 'center' }}><Search size={16} /></button>
+                   <button className={styles.btnGhost} style={{ width: '40px', height: '40px', padding: 0, display: 'grid', placeItems: 'center' }}><MoreVertical size={16} /></button>
+                </div>
               </div>
 
-              {/* Messages body */}
-              <div
+              {/* Messages Feed */}
+              <div 
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto px-6 py-6 space-y-4 scroll-smooth custom-scrollbar"
+                style={{ flex: 1, overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}
+                className="custom-scrollbar"
               >
                 {loadingMessages && messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full gap-3">
-                    <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-                    <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">Sincronizando...</p>
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-700 text-sm gap-2">
-                    <div className="w-16 h-16 bg-slate-900/50 rounded-full flex items-center justify-center mb-2">
-                      <MessageSquare className="w-8 h-8 opacity-20" />
-                    </div>
-                    <p className="font-medium opacity-50">Seja o primeiro a escrever.</p>
+                  <div style={{ flex: 1, display: 'grid', placeItems: 'center' }}>
+                    <Loader2 className="w-10 h-10 text-[#00b8b2] animate-spin" />
                   </div>
                 ) : (
-                  messages.map((m, idx) => {
+                  messages.map((m) => {
                     const isMine = m.senderId === myId;
-                    const showAvatar = !isMine && (idx === 0 || messages[idx-1].senderId !== m.senderId);
-                    
                     return (
-                      <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                        {!isMine && (
-                          <div className={`w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400 mr-3 mt-1 shrink-0 ${!showAvatar ? 'opacity-0' : ''}`}>
-                            {m.sender?.fullName?.charAt(0)?.toUpperCase() ?? '?'}
-                          </div>
-                        )}
-                        <div className="flex flex-col max-w-[75%]">
-                          {!isMine && showAvatar && (
-                            <span className="text-[10px] text-slate-500 font-bold ml-1 mb-1 uppercase tracking-tight">
-                              {m.sender?.fullName}
-                            </span>
-                          )}
-                          <div
-                            className={`rounded-2xl px-4 py-3 text-sm shadow-xl transition-all ${
-                              isMine
-                                ? 'bg-blue-600 text-white rounded-tr-none shadow-blue-900/10'
-                                : 'bg-slate-900/80 text-slate-200 rounded-tl-none border border-slate-800 shadow-black/20'
-                            }`}
-                          >
-                            <p className="leading-relaxed whitespace-pre-wrap break-words">{m.body}</p>
-                            <div className={`text-[10px] mt-2 block opacity-40 font-medium ${isMine ? 'text-right' : 'text-left'}`}>
-                              {new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </div>
+                      <div key={m.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
+                        <div style={{ 
+                          maxWidth: '65%', 
+                          background: isMine ? 'rgba(0,184,178,0.1)' : 'rgba(255,255,255,0.03)', 
+                          color: isMine ? '#fff' : '#eef6ff',
+                          padding: '16px 20px',
+                          borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                          fontSize: '14px',
+                          position: 'relative',
+                          border: isMine ? '1px solid rgba(0,184,178,0.3)' : '1px solid rgba(255,255,255,0.05)',
+                          boxShadow: isMine ? '0 10px 30px rgba(0,0,0,0.2)' : 'none'
+                        }}>
+                          <p style={{ margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{m.body}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '8px' }}>
+                             <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 700 }}>
+                               {new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                             </span>
+                             {isMine && <CheckCheck size={12} className="text-[#00b8b2] opacity-60" />}
                           </div>
                         </div>
                       </div>
-                    );
+                    )
                   })
                 )}
               </div>
 
-              {/* Input Area com Gating */}
-              <div className="px-6 py-5 border-t border-slate-800 bg-slate-950/40 backdrop-blur-xl shrink-0">
-                <PlanGate 
-                  minTier="PROFESSIONAL"
-                  variant="lock"
-                  title="Interação Premium"
-                  description="Como usuário Basic, você pode apenas receber mensagens de investidores. Faça upgrade para responder e negociar ativamente."
-                >
-                  <form onSubmit={handleSend} className="flex gap-3 items-end max-w-5xl mx-auto">
-                    <div className="flex-1 relative">
+              {/* Input Area */}
+              <div style={{ padding: '24px 32px 32px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <PlanGate minTier="PROFESSIONAL" variant="lock">
+                  <form onSubmit={handleSend} style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1, position: 'relative' }}>
                       <textarea
-                        ref={inputRef as any}
-                        rows={1}
+                        ref={inputRef}
                         value={newMessage}
-                        onChange={e => {
-                          setNewMessage(e.target.value);
-                          e.target.style.height = 'auto';
-                          e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                        onChange={e => setNewMessage(e.target.value)}
+                        placeholder="Comunique-se de forma segura e institucional..."
+                        className={styles.bConfig}
+                        style={{ 
+                          width: '100%', 
+                          background: 'rgba(255,255,255,0.02)', 
+                          padding: '16px 20px', 
+                          color: '#fff', 
+                          fontSize: '14px',
+                          resize: 'none',
+                          height: Math.min(Math.max(56, newMessage.split('\n').length * 20), 120) + 'px'
                         }}
-                        onKeyDown={e => { 
-                          if (e.key === 'Enter' && !e.shiftKey) { 
-                            e.preventDefault(); 
-                            handleSend(e); 
-                          } 
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend(e);
+                          }
                         }}
-                        placeholder="Escreva sua mensagem..."
-                        className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all placeholder:text-slate-600 resize-none overflow-hidden"
                       />
                     </div>
-                    <button
-                      type="submit"
-                      disabled={sending || !newMessage.trim()}
-                      className="bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed w-12 h-12 rounded-xl transition-all shrink-0 flex items-center justify-center shadow-lg shadow-blue-600/20"
+                    <button 
+                      type="submit" 
+                      disabled={!newMessage.trim() || sending}
+                      className={styles.btnBrand}
+                      style={{ width: '56px', height: '56px', padding: 0, display: 'grid', placeItems: 'center', flexShrink: 0 }}
                     >
-                      {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 text-white" />}
+                      {sending ? <Loader2 size={20} className="animate-spin text-white" /> : <Send size={20} className="text-white" />}
                     </button>
                   </form>
                 </PlanGate>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-6 text-center px-10 bg-[#020617]">
-              <div className="relative">
-                <div className="absolute inset-0 bg-blue-600/20 blur-3xl rounded-full" />
-                <div className="relative w-20 h-20 bg-slate-900 border border-slate-800 rounded-3xl flex items-center justify-center shadow-2xl">
-                  <MessageSquare className="w-10 h-10 text-blue-500" />
+            <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: '60px', textAlign: 'center' }}>
+              <div>
+                <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 32px' }}>
+                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #00b8b2 0%, transparent 100%)', borderRadius: '32px', opacity: 0.1, transform: 'rotate(12deg)' }}></div>
+                   <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', display: 'grid', placeItems: 'center', backdropFilter: 'blur(10px)' }}>
+                      <Zap size={40} style={{ color: '#00b8b2', opacity: 0.5 }} />
+                   </div>
                 </div>
-              </div>
-              <div className="max-w-sm">
-                <h3 className="text-xl font-bold text-white mb-2 italic tracking-tight font-serif uppercase tracking-widest">Finanhub Secure Chat</h3>
-                <p className="text-sm text-slate-500 leading-relaxed font-medium">
-                  Selecione uma conversa ao lado para visualizar o histórico de negociações ou inicie um suporte direto.
+                <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '12px' }}>HAYIA Intelligence Connection</h3>
+                <p style={{ fontSize: '14px', color: '#8fa6c3', maxWidth: '360px', margin: '0 auto', lineHeight: 1.6 }}>
+                   Selecione uma negociação ao lado para acessar o Deal Room seguro. Suas conversas são auditadas pela HAYIA para garantir conformidade e transparência estratégica.
                 </p>
-                
-                <button 
-                  onClick={() => setShowNewThread(true)}
-                  className="mt-8 flex items-center gap-2 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold rounded-xl border border-slate-800 transition-all mx-auto"
-                >
-                  <Plus className="w-4 h-4" /> Nova Conversa
-                </button>
               </div>
             </div>
           )}
-        </section>
-
-        {/* ── Modal: nova conversa ── */}
-        {showNewThread && (
-          <div className="fixed inset-0 bg-[#020617]/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 w-full max-w-md space-y-6 shadow-2xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent pointer-events-none" />
-              
-              <div className="relative z-10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                    <Plus className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <h3 className="text-lg font-bold text-white">Nova Conversa</h3>
-                </div>
-                <button onClick={() => setShowNewThread(false)} className="w-8 h-8 flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-full transition-colors text-slate-400">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="relative z-10 bg-slate-950/50 border border-slate-800/50 p-4 rounded-2xl">
-                <p className="text-xs text-slate-400 leading-loose">
-                  Esta ação abrirá um canal direto e seguro com o **Administrador Master**. 
-                  Ideal para suporte técnico, dúvidas sobre assinaturas ou intermediação estratégica de negócios.
-                </p>
-              </div>
-              
-              <div className="relative z-10 flex gap-4 pt-2">
-                <button 
-                  onClick={() => setShowNewThread(false)} 
-                  className="flex-1 text-sm font-bold text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  Voltar
-                </button>
-                <button
-                  onClick={handleCreateThread}
-                  disabled={creatingThread}
-                  className="flex-[2] flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50"
-                >
-                  {creatingThread ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      Confirmar Abertura
-                      <ChevronRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
 
       </div>
+
+      {/* Modal - Nova Conversa */}
+      {showNewThread && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.95)', backdropFilter: 'blur(12px)', zIndex: 1000, display: 'grid', placeItems: 'center', padding: '20px' }}>
+          <div className={styles.card} style={{ maxWidth: '440px', width: '100%', padding: '40px', position: 'relative', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <button onClick={() => setShowNewThread(false)} style={{ position: 'absolute', right: '24px', top: '24px', color: '#64748b' }}>
+              <X size={20} />
+            </button>
+            <div style={{ width: '56px', height: '56px', background: 'rgba(0,184,178,0.1)', borderRadius: '16px', display: 'grid', placeItems: 'center', color: '#00b8b2', marginBottom: '24px' }}>
+              <Shield size={24} />
+            </div>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#fff', marginBottom: '12px' }}>Iniciar Deal Room</h2>
+            <p style={{ fontSize: '14px', color: '#8fa6c3', marginBottom: '32px', lineHeight: 1.6 }}>
+               Inicie um canal de negociação direta com especialistas da FINANHUB para suporte em diligências ou intermediação de ativos.
+            </p>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              <button 
+                onClick={handleCreateThread}
+                disabled={creatingThread}
+                className={styles.btnBrand}
+                style={{ width: '100%', height: '52px' }}
+              >
+                {creatingThread ? 'Estabelecendo Conexão...' : 'Abrir Sessão Segura'}
+              </button>
+              <button onClick={() => setShowNewThread(false)} className={styles.btnGhost} style={{ width: '100%', height: '52px' }}>Cancelar Operação</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
@@ -417,13 +367,13 @@ export default function MessagesPage() {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #1e293b;
+          background: rgba(255,255,255,0.05);
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #334155;
+          background: rgba(255,255,255,0.1);
         }
       `}</style>
-    </AdminLayout>
+    </>
   );
 }

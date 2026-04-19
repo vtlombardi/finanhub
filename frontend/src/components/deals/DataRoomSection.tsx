@@ -1,18 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { api } from '@/services/api.client';
+import { useEffect, useState, useMemo } from 'react';
+import { DataRoomService } from '@/services/DataRoomService';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
   Lock, Unlock, FileText, Download, Send,
-  Clock, XCircle, Loader2, ShieldCheck,
+  Clock, XCircle, Loader2, ShieldCheck, Zap,
+  ChevronRight, AlertCircle, FileDigit, Landmark, 
+  Scale, Workflow, ShieldAlert, History
 } from 'lucide-react';
+import { NdaModal } from './NdaModal';
 
 interface DataRoomDocument {
   id: string;
-  name: string;
+  title: string;
   url: string;
-  mediaType: string;
+  category: string;
   createdAt: string;
 }
 
@@ -20,42 +23,47 @@ interface DataRoomRequest {
   id: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   message: string | null;
+  acceptedNdaAt: string | null;
   createdAt: string;
 }
 
 type Phase = 'idle' | 'form' | 'loading' | 'pending' | 'approved' | 'rejected' | 'error';
 
-const FILE_ICONS: Record<string, string> = {
-  pdf: 'fa-file-pdf-o',
-  doc: 'fa-file-word-o',
-  docx: 'fa-file-word-o',
-  xls: 'fa-file-excel-o',
-  xlsx: 'fa-file-excel-o',
-  default: 'fa-file-o',
+const CATEGORY_MAP: Record<string, { label: string; icon: any; color: string }> = {
+  FINANCIAL: { label: 'Financeiro', icon: Landmark, color: '#00b8b2' },
+  LEGAL: { label: 'Jurídico', icon: Scale, color: '#fb923c' },
+  OPERATIONAL: { label: 'Operacional', icon: Workflow, color: '#3b82f6' },
+  CORPORATE: { label: 'Societário', icon: ShieldAlert, color: '#8b5cf6' },
+  TAX: { label: 'Tributário', icon: History, color: '#f43f5e' },
+  HR: { label: 'RH', icon: Landmark, color: '#10b981' },
+  OTHER: { label: 'Outros', icon: FileText, color: '#64748b' },
 };
-
-function fileIcon(url: string) {
-  const ext = url.split('.').pop()?.toLowerCase() ?? '';
-  return FILE_ICONS[ext] ?? FILE_ICONS.default;
-}
 
 export function DataRoomSection({ listingId }: { listingId: string }) {
   const { isAuthenticated, user } = useAuth();
   const [phase, setPhase] = useState<Phase>('loading');
+  const [request, setRequest] = useState<DataRoomRequest | null>(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [documents, setDocuments] = useState<DataRoomDocument[]>([]);
+  const [showNdaModal, setShowNdaModal] = useState(false);
 
   // Load existing request status on mount (if authenticated)
   useEffect(() => {
     if (!isAuthenticated) { setPhase('idle'); return; }
 
-    api.get<DataRoomRequest | null>('/dataroom/request', { params: { listingId } })
-      .then(({ data }) => {
+    DataRoomService.getRequestStatus(listingId)
+      .then((data) => {
         if (!data) { setPhase('idle'); return; }
+        setRequest(data);
         if (data.status === 'APPROVED') {
           setPhase('approved');
           loadDocuments();
+          
+          // Se aprovado mas não aceitou NDA, mostrar modal
+          if (!data.acceptedNdaAt) {
+            setShowNdaModal(true);
+          }
         } else if (data.status === 'REJECTED') {
           setPhase('rejected');
         } else {
@@ -63,11 +71,11 @@ export function DataRoomSection({ listingId }: { listingId: string }) {
         }
       })
       .catch(() => setPhase('idle'));
-  }, [isAuthenticated, listingId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, listingId]);
 
   const loadDocuments = () => {
-    api.get<DataRoomDocument[]>(`/dataroom/${listingId}/documents`)
-      .then(({ data }) => setDocuments(data))
+    DataRoomService.getDocuments(listingId)
+      .then((data) => setDocuments(data))
       .catch(() => {});
   };
 
@@ -75,7 +83,7 @@ export function DataRoomSection({ listingId }: { listingId: string }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post('/dataroom/request', { listingId, message: message.trim() || undefined });
+      await DataRoomService.createRequest(listingId, message.trim() || undefined);
       setPhase('pending');
     } catch {
       setPhase('error');
@@ -84,18 +92,131 @@ export function DataRoomSection({ listingId }: { listingId: string }) {
     }
   };
 
+  const handleAcceptNda = async () => {
+    try {
+      await DataRoomService.acceptNda(listingId);
+      setShowNdaModal(false);
+      // Refresh status
+      const updatedStatus = await DataRoomService.getRequestStatus(listingId);
+      setRequest(updatedStatus);
+    } catch (err) {
+      console.error('Falha ao aceitar NDA:', err);
+    }
+  };
+
+  const handleViewDocument = async (doc: DataRoomDocument) => {
+    try {
+      await DataRoomService.logView(doc.id);
+      window.open(doc.url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('Falha ao registrar visualização:', err);
+      // Ainda tenta abrir o documento
+      window.open(doc.url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Group documents by category
+  const groupedDocuments = useMemo(() => {
+    const groups: Record<string, DataRoomDocument[]> = {};
+    documents.forEach(doc => {
+      if (!groups[doc.category]) groups[doc.category] = [];
+      groups[doc.category].push(doc);
+    });
+    return groups;
+  }, [documents]);
+
   // ── Unauthenticated ────────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
-      <section className="bg-slate-800/20 p-6 rounded-2xl border border-blue-500/10 flex items-start gap-4">
-        <ShieldCheck className="text-blue-500 shrink-0 mt-1" size={24} />
+      <section id="data-room-section" style={{ 
+        background: 'rgba(255,255,255,0.02)', 
+        border: '1px solid rgba(255,255,255,0.05)', 
+        borderRadius: '16px',
+        padding: '24px',
+        display: 'flex',
+        gap: '16px'
+      }}>
+        <div style={{ 
+          width: '48px', 
+          height: '48px', 
+          borderRadius: '12px', 
+          background: 'rgba(59,130,246,0.1)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          flexShrink: 0
+        }}>
+          <ShieldCheck className="text-[#3b82f6]" size={24} />
+        </div>
         <div>
-          <h3 className="font-semibold text-slate-200">Ambiente de Deal Protegido</h3>
-          <p className="text-sm text-slate-400 mt-1">
-            Faça login para solicitar acesso ao Data Room e visualizar documentos confidenciais
-            como DREs, contratos e balanços patrimoniais.
+          <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>Data Room & Repositório Privado</h3>
+          <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
+            Faça login para solicitar acesso ao repositório estratégico desta operação e visualizar documentos confidenciais (DRE, Contratos, Balanços).
           </p>
         </div>
+      </section>
+    );
+  }
+
+  // ── Seller/Owner Case ──────────────────────────────────────────────────────
+  // We check if the current user is the owner of the listing via tenantId
+  // We'll need the listing tenantId. If not passed, we might need to verify or assume.
+  // Assuming listing object is available or we can check via request (backend will handle 403 if wrong).
+  // But for better UX, if we have listingId, and we are logged in, we check.
+  // To keep it simple and robust, we add a check if the user is the seller.
+  const isSeller = user?.tenantId && listing?.tenantId && user.tenantId === listing.tenantId;
+
+  if (isSeller) {
+    return (
+      <section id="data-room-section" style={{ 
+        background: 'rgba(59,130,246,0.05)', 
+        border: '1px solid rgba(59,130,246,0.2)', 
+        borderRadius: '16px',
+        padding: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{ 
+            width: '48px', 
+            height: '48px', 
+            borderRadius: '12px', 
+            background: 'rgba(59,130,246,0.1)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <Lock className="text-[#3b82f6]" size={24} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>Gestão de Data Room (Seu Anúncio)</h3>
+            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
+              Como anunciante, você pode gerenciar os documentos confidenciais, aceitar termos de NDA e controlar o acesso dos interessados.
+            </p>
+          </div>
+        </div>
+        
+        <Link 
+          href={`/dashboard/listings/${listingId}/dataroom`}
+          style={{
+            background: '#3b82f6',
+            color: '#fff',
+            padding: '12px 20px',
+            borderRadius: '12px',
+            fontSize: '13px',
+            fontWeight: 600,
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          <Settings size={16} />
+          Gerenciar Repositório & Documentos
+        </Link>
       </section>
     );
   }
@@ -103,41 +224,127 @@ export function DataRoomSection({ listingId }: { listingId: string }) {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (phase === 'loading') {
     return (
-      <section className="bg-slate-800/20 p-6 rounded-2xl border border-slate-700/30 flex items-center gap-3">
-        <Loader2 className="w-5 h-5 text-slate-500 animate-spin" />
-        <span className="text-sm text-slate-500">Verificando acesso ao Data Room...</span>
-      </section>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '24px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px' }}>
+        <Loader2 size={16} className="text-[#00b8b2] animate-spin" />
+        <span style={{ fontSize: '13px', color: '#64748b' }}>Verificando credenciais do Data Room...</span>
+      </div>
     );
   }
 
-  // ── Approved — show documents ──────────────────────────────────────────────
+  // ── Approved ───────────────────────────────────────────────────────────────
   if (phase === 'approved') {
+    const isNdaPending = !request?.acceptedNdaAt;
+
     return (
-      <section className="glass-panel p-6 rounded-2xl border-l-4 border-l-emerald-500 space-y-4">
-        <h3 className="font-semibold text-slate-200 flex items-center gap-2">
-          <Unlock size={18} className="text-emerald-400" /> Data Room — Acesso Liberado
-        </h3>
-        {documents.length === 0 ? (
-          <p className="text-sm text-slate-500 italic">Nenhum documento disponível ainda. O vendedor adicionará em breve.</p>
-        ) : (
-          <div className="space-y-2">
-            {documents.map(doc => (
-              <a
-                key={doc.id}
-                href={doc.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between gap-4 bg-slate-800/40 border border-slate-700/50 rounded-xl px-4 py-3 hover:border-emerald-500/40 hover:bg-slate-800/60 transition-all group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <i className={`fa ${fileIcon(doc.url)} text-emerald-400 text-lg`} />
-                  <span className="text-sm text-slate-200 truncate">{doc.name}</span>
-                </div>
-                <Download className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0" />
-              </a>
-            ))}
+      <section style={{ 
+        background: 'rgba(255,255,255,0.02)', 
+        border: '1px solid rgba(255,255,255,0.05)', 
+        borderRadius: '20px',
+        overflow: 'hidden'
+      }}>
+        <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyCenter: 'center' }}>
+              <Unlock size={20} className="text-[#10b981] mx-auto" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#fff' }}>Repositório Estratégico</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+                <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 800, textTransform: 'uppercase' }}>Acesso Liberado</span>
+              </div>
+            </div>
           </div>
-        )}
+          
+          {!isNdaPending && (
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>
+              NDA Aceito em {new Date(request!.acceptedNdaAt!).toLocaleDateString()}
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: '24px' }}>
+          {isNdaPending ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Lock size={32} className="text-[#64748b] mx-auto mb-4 opacity-50" />
+              <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Documentos Protegidos</h4>
+              <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '300px', margin: '0 auto 20px' }}>
+                Você precisa aceitar os termos de confidencialidade para visualizar os arquivos desta operação.
+              </p>
+              <button 
+                onClick={() => setShowNdaModal(true)}
+                className="bg-[#00b8b2] hover:bg-[#0e8a87] text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+              >
+                Acessar Termos de Sigilo
+              </button>
+            </div>
+          ) : documents.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px 0', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+              <p style={{ fontSize: '13px', color: '#64748b' }}>Aguardando upload de documentos pelo vendedor.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {Object.entries(groupedDocuments).map(([category, docs]) => {
+                const config = CATEGORY_MAP[category] || CATEGORY_MAP.OTHER;
+                const Icon = config.icon;
+                
+                return (
+                  <div key={category}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                       <Icon size={14} style={{ color: config.color }} />
+                       <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: config.color, letterSpacing: '0.05em' }}>
+                         {config.label}
+                       </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
+                      {docs.map(doc => (
+                        <div 
+                          key={doc.id}
+                          onClick={() => handleViewDocument(doc)}
+                          style={{ 
+                            background: 'rgba(255,255,255,0.03)', 
+                            border: '1px solid rgba(255,255,255,0.05)', 
+                            borderRadius: '12px', 
+                            padding: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                          className="hover:border-[#00b8b2]/30 hover:bg-[rgba(0,184,178,0.03)] group"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                            <div style={{ color: '#00b8b2' }}>
+                               <FileDigit size={18} />
+                            </div>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {doc.title}
+                            </span>
+                          </div>
+                          <Download size={14} className="text-[#475569] group-hover:text-[#00b8b2] shrink-0" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <NdaModal 
+          isOpen={showNdaModal}
+          onClose={() => {
+            // Se fechar e não aceitou, mantemos o estado de pendência
+            if (!request?.acceptedNdaAt) {
+              // Note: This modal is mandatory for viewing
+            }
+            setShowNdaModal(false);
+          }}
+          listingTitle="esta operação"
+          onAccept={handleAcceptNda}
+        />
       </section>
     );
   }
@@ -145,13 +352,21 @@ export function DataRoomSection({ listingId }: { listingId: string }) {
   // ── Pending ────────────────────────────────────────────────────────────────
   if (phase === 'pending') {
     return (
-      <section className="bg-amber-500/5 p-6 rounded-2xl border border-amber-500/20 flex items-start gap-4">
-        <Clock className="text-amber-400 shrink-0 mt-1" size={22} />
+      <section style={{ 
+        background: 'rgba(251,146,60,0.03)', 
+        border: '1px solid rgba(251,146,60,0.1)', 
+        borderRadius: '16px',
+        padding: '24px',
+        display: 'flex',
+        gap: '16px'
+      }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(251,146,60,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Clock className="text-[#fb923c]" size={24} />
+        </div>
         <div>
-          <h3 className="font-semibold text-amber-300">Solicitação Enviada</h3>
-          <p className="text-sm text-slate-400 mt-1">
-            Sua solicitação de acesso ao Data Room está aguardando aprovação do vendedor.
-            Você será notificado quando houver uma resposta.
+          <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#fb923c', marginBottom: '4px' }}>Solicitação em Análise</h3>
+          <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6' }}>
+            Sua solicitação de acesso foi enviada. O anunciante analisará seu perfil e liberará o repositório estratégico conforme o avanço da negociação.
           </p>
         </div>
       </section>
@@ -161,12 +376,21 @@ export function DataRoomSection({ listingId }: { listingId: string }) {
   // ── Rejected ───────────────────────────────────────────────────────────────
   if (phase === 'rejected') {
     return (
-      <section className="bg-red-500/5 p-6 rounded-2xl border border-red-500/20 flex items-start gap-4">
-        <XCircle className="text-red-400 shrink-0 mt-1" size={22} />
+      <section style={{ 
+        background: 'rgba(244,63,94,0.03)', 
+        border: '1px solid rgba(244,63,94,0.1)', 
+        borderRadius: '16px',
+        padding: '24px',
+        display: 'flex',
+        gap: '16px'
+      }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(244,63,94,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <XCircle className="text-[#f43f5e]" size={24} />
+        </div>
         <div>
-          <h3 className="font-semibold text-red-300">Acesso Não Autorizado</h3>
-          <p className="text-sm text-slate-400 mt-1">
-            O vendedor não aprovou sua solicitação de acesso ao Data Room desta operação.
+          <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#f43f5e', marginBottom: '4px' }}>Acesso Restrito</h3>
+          <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6' }}>
+            Infelizmente, seu acesso ao repositório estratégico não foi autorizado para esta operação no momento.
           </p>
         </div>
       </section>
@@ -175,50 +399,87 @@ export function DataRoomSection({ listingId }: { listingId: string }) {
 
   // ── Form (idle / error) ────────────────────────────────────────────────────
   return (
-    <section className="glass-panel p-6 rounded-2xl border-l-4 border-l-blue-500 space-y-4">
-      <h3 className="font-semibold text-slate-200 flex items-center gap-2">
-        <Lock size={18} className="text-blue-400" /> Solicitar Acesso ao Data Room
-      </h3>
-      <p className="text-sm text-slate-400">
-        Os documentos confidenciais desta operação (DREs, contratos, balanço patrimonial) estão
-        protegidos por NDA inicial. Solicite acesso e aguarde a aprovação do vendedor.
+    <section style={{ 
+      background: 'rgba(255,255,255,0.02)', 
+      border: '1px solid rgba(255,255,255,0.05)', 
+      borderRadius: '20px',
+      padding: '24px'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(0,184,178,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Lock size={20} className="text-[#00b8b2]" />
+        </div>
+        <div>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#fff' }}>Solicitar Acesso ao Data Room</h3>
+          <p style={{ fontSize: '12px', color: '#64748b' }}>Documentos estratégicos e análise fundamentalista</p>
+        </div>
+      </div>
+
+      <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6', marginBottom: '20px' }}>
+        O Data Room contém documentos confidenciais sobre o ativo. O acesso é liberado manualmente pelo vendedor após validação inicial do interesse.
       </p>
 
       {phase === 'error' && (
-        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-          Erro ao enviar solicitação. Tente novamente.
+        <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.2)', color: '#f43f5e', fontSize: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <AlertCircle size={14} />
+          Falha ao enviar solicitação. Tente novamente ou contate o suporte.
         </div>
       )}
 
       {phase === 'form' ? (
-        <form onSubmit={handleRequest} className="space-y-3">
+        <form onSubmit={handleRequest} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">
-              Mensagem de apresentação <span className="text-slate-600">(opcional)</span>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', marginBottom: '8px', letterSpacing: '0.05em' }}>
+              Mensagem de Apresentação <span style={{ color: '#475569' }}>(Opcional)</span>
             </label>
             <textarea
               value={message}
               onChange={e => setMessage(e.target.value)}
-              placeholder="Breve apresentação da sua empresa e interesse na operação..."
-              className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-blue-500/50 min-h-[90px] resize-y"
+              placeholder="Ex: Gostaria de analisar os dados para follow-up da tese..."
+              style={{ 
+                width: '100%', 
+                background: 'rgba(0,0,0,0.2)', 
+                border: '1px solid rgba(255,255,255,0.1)', 
+                borderRadius: '12px', 
+                padding: '16px', 
+                color: '#fff', 
+                fontSize: '13px',
+                minHeight: '100px',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#00b8b2'}
+              onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
             />
           </div>
-          <div className="flex gap-3">
+          <div style={{ display: 'flex', gap: '12px' }}>
             <button
               type="submit"
               disabled={submitting}
-              className="btn-primary flex items-center gap-2 text-sm disabled:opacity-50"
+              style={{ 
+                flex: 1, 
+                height: '44px', 
+                background: '#00b8b2', 
+                color: '#fff', 
+                borderRadius: '12px', 
+                fontSize: '13px', 
+                fontWeight: 800, 
+                border: 'none', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '8px',
+                cursor: submitting ? 'default' : 'pointer',
+                opacity: submitting ? 0.7 : 1
+              }}
             >
-              {submitting
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <Send size={14} />
-              }
-              {submitting ? 'Enviando...' : 'Solicitar Acesso'}
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={14} />}
+              {submitting ? 'Enviando...' : 'Confirmar Solicitação'}
             </button>
             <button
               type="button"
               onClick={() => setPhase('idle')}
-              className="text-sm text-slate-500 hover:text-slate-300 transition px-3"
+              style={{ height: '44px', padding: '0 20px', background: 'transparent', color: '#64748b', fontSize: '13px', fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Cancelar
             </button>
@@ -227,9 +488,26 @@ export function DataRoomSection({ listingId }: { listingId: string }) {
       ) : (
         <button
           onClick={() => setPhase('form')}
-          className="flex items-center gap-2 text-sm font-semibold text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 px-4 py-2.5 rounded-xl transition-colors"
+          style={{ 
+            width: '100%', 
+            height: '48px', 
+            background: 'rgba(0,184,178,0.1)', 
+            border: '1px solid rgba(0,184,178,0.2)', 
+            borderRadius: '14px', 
+            color: '#00b8b2', 
+            fontSize: '13px', 
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          className="hover:bg-[#00b8b2] hover:text-white"
         >
-          <FileText size={16} /> Solicitar Acesso aos Documentos
+          <Zap size={16} />
+          <span>Solicitar Acesso Estratégico</span>
         </button>
       )}
     </section>

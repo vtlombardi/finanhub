@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { NotificationCategory, NotificationEvents } from './notifications.events';
 
 @Injectable()
 export class NotificationsService {
@@ -55,12 +56,73 @@ export class NotificationsService {
   }
 
   /**
-   * Cria uma notificação in-app para um usuário.
+   * Cria uma notificação in-app para um usuário com lógica de inteligência HAYIA.
    */
   async create(userId: string, type: string, title: string, body: string, metadata?: any) {
+    // Se não for passado um título/corpo customizado, tenta gerar via Inteligência
+    let finalTitle = title;
+    let finalBody = body;
+
+    if (!title || !body) {
+      const smart = this.generateSmartMessage(type, metadata);
+      finalTitle = smart.title;
+      finalBody = smart.body;
+    }
+
     return this.prisma.notification.create({
-      data: { userId, type, title, body, metadata },
+      data: { 
+        userId, 
+        type, 
+        title: finalTitle, 
+        body: finalBody, 
+        metadata: metadata || {} 
+      },
     });
+  }
+
+  /**
+   * Camada de Inteligência HAYIA: Gera mensagens proativas e orientadas a negócio.
+   */
+  private generateSmartMessage(type: string, metadata: any = {}) {
+    const { listingTitle, investorName, score, docName } = metadata;
+
+    switch (type) {
+      case NotificationEvents.LEAD_CREATED:
+        return {
+          title: 'Novo Lead Qualificado',
+          body: `Um investidor interessado em "${listingTitle}" manifestou interesse. Revise o perfil agora.`
+        };
+      case NotificationEvents.LEAD_SCORE_HIGH:
+        return {
+          title: 'Oportunidade de Alto Potencial',
+          body: `Investidor com score ${score} qualificado para "${listingTitle}". Recomendamos prioridade máxima.`
+        };
+      case NotificationEvents.LEAD_STALLED:
+        return {
+          title: 'Risco de Perda de Lead',
+          body: `O investidor ${investorName} aguarda resposta há > 48h. Responda agora para manter o engajamento.`
+        };
+      case NotificationEvents.DATAROOM_VIEWED:
+        return {
+          title: 'Interesse em Documentação',
+          body: `Investidor visualizou "${docName}". Momento ideal para follow-up sobre as informações financeiras.`
+        };
+      case NotificationEvents.PROPOSAL_RECEIVED:
+        return {
+          title: 'Proposta Recebida',
+          body: `Uma nova oferta foi enviada para "${listingTitle}". Analise os termos e condições.`
+        };
+      case NotificationEvents.DATAROOM_REQUESTED:
+        return {
+          title: 'Solicitação de Acesso ao Data Room',
+          body: `Um investidor solicitou acesso aos documentos confidenciais. Valide a qualificação antes de liberar.`
+        };
+      default:
+        return {
+          title: 'Notificação Finanhub',
+          body: 'Você tem uma nova atualização em seu dashboard.'
+        };
+    }
   }
 
   /**

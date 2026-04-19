@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { api } from '@/services/api.client';
-import { UserPlus, Trash2, Edit2, Loader2, CheckCircle, Clock } from 'lucide-react';
+import { UserPlus, Trash2, Edit2, Loader2, CheckCircle, Clock, X, Shield, Users, Mail, UserCheck, Fingerprint, Activity } from 'lucide-react';
+import styles from '@/styles/Dashboard.module.css';
 
 interface Member {
   id: string;
@@ -16,11 +16,10 @@ interface Member {
   createdAt: string;
 }
 
-const ROLE_LABELS: Record<string, string> = { OWNER: 'Proprietário', ADMIN: 'Admin', USER: 'Membro' };
-const ROLE_COLORS: Record<string, string> = {
-  OWNER: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
-  ADMIN: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  USER: 'bg-slate-700 text-slate-400 border-slate-600',
+const ROLE_CONFIG: Record<string, { label: string; cls: string; icon: any; color: string }> = { 
+  OWNER: { label: 'Proprietário', cls: 'bg-violet-500/10 text-violet-400 border-violet-500/20', icon: Shield, color: '#8b5cf6' }, 
+  ADMIN: { label: 'Administrador', cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: UserCheck, color: '#3b82f6' }, 
+  USER:  { label: 'Analista M&A', cls: 'bg-slate-700/10 text-slate-400 border-slate-600', icon: Fingerprint, color: '#64748b' } 
 };
 
 export default function MembersPage() {
@@ -33,13 +32,11 @@ export default function MembersPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Invite form
   const [showForm, setShowForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState<'USER' | 'ADMIN'>('USER');
 
-  // Edit modal
   const [editMember, setEditMember] = useState<Member | null>(null);
   const [editRole, setEditRole] = useState<string>('USER');
 
@@ -50,7 +47,7 @@ export default function MembersPage() {
       const { data } = await api.get<Member[]>('/tenants/members');
       setMembers(data);
     } catch {
-      setError('Erro ao carregar membros.');
+      setError('Erro na sincronização de membros.');
     } finally {
       setLoading(false);
     }
@@ -65,14 +62,14 @@ export default function MembersPage() {
     setSuccess('');
     try {
       await api.post('/tenants/members', { email: inviteEmail, fullName: inviteName, role: inviteRole });
-      setSuccess(`Convite enviado para ${inviteEmail}.`);
+      setSuccess(`Protocolo de convite enviado para ${inviteEmail}.`);
       setInviteEmail('');
       setInviteName('');
       setInviteRole('USER');
       setShowForm(false);
       loadMembers();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Erro ao enviar convite.');
+      setError(err?.response?.data?.message || 'Erro no provisionamento do convite.');
     } finally {
       setSubmitting(false);
     }
@@ -84,185 +81,248 @@ export default function MembersPage() {
     setError('');
     try {
       await api.patch(`/tenants/members/${editMember.id}`, { role: editRole });
-      setSuccess('Cargo atualizado.');
+      setSuccess('Cargo institucional redefinido com sucesso.');
       setEditMember(null);
       loadMembers();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Erro ao atualizar cargo.');
+      setError(err?.response?.data?.message || 'Falha na alteração de privilégios.');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleRemove = async (member: Member) => {
-    if (!confirm(`Remover ${member.fullName} do workspace?`)) return;
+    if (!confirm(`Revogar acesso de ${member.fullName} do terminal?`)) return;
     setError('');
     try {
       await api.delete(`/tenants/members/${member.id}`);
-      setSuccess(`${member.fullName} removido.`);
+      setSuccess(`Privilégios de ${member.fullName} revogados.`);
       loadMembers();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Erro ao remover membro.');
+      setError(err?.response?.data?.message || 'Erro ao processar revogação.');
     }
   };
 
   return (
-    <AdminLayout>
-      <div className="min-h-screen bg-[#020617] text-slate-100 p-6">
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Membros do Workspace</h1>
-            <p className="text-sm text-slate-500 mt-1">Gerencie quem tem acesso ao seu workspace.</p>
-          </div>
-          {canManage && (
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
-            >
-              <UserPlus className="w-4 h-4" /> Convidar Membro
-            </button>
-          )}
+    <>
+      <div className={styles.pageHeader}>
+        <div>
+          <h1>Equipe & Governança</h1>
+          <p>Gestão de operadores institucionais e níveis de privilégio no terminal.</p>
         </div>
+        {canManage && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className={styles.btnBrand}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 24px', height: '48px' }}
+          >
+            <UserPlus size={18} /> Provisionar Analista
+          </button>
+        )}
+      </div>
 
-        {/* Feedback */}
-        {error && <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>}
-        {success && <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">{success}</div>}
+      {(error || success) && (
+        <div style={{ 
+          marginBottom: '32px', 
+          padding: '20px 24px', 
+          borderRadius: '12px',
+          border: '1px solid',
+          background: success ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+          borderColor: success ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+          color: success ? '#10b981' : '#ef4444',
+          fontSize: '14px',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          {success ? <CheckCircle size={18} /> : <X size={18} />}
+          {error || success}
+        </div>
+      )}
 
-        {/* Invite form */}
-        {showForm && (
-          <form onSubmit={handleInvite} className="mb-6 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-white">Novo Convite</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Nome Completo</label>
-                <input
-                  type="text"
-                  value={inviteName}
-                  onChange={e => setInviteName(e.target.value)}
-                  className="input-premium"
-                  placeholder="João Silva"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">E-mail</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                  className="input-premium"
-                  placeholder="joao@empresa.com"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Cargo</label>
+      {showForm && (
+        <div className={styles.card} style={{ marginBottom: '48px', padding: '40px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 900, color: '#fff' }}>Protocolar Novo Convite</h3>
+             <button onClick={() => setShowForm(false)} className={styles.btnGhost} style={{ width: '40px', height: '40px', padding: 0, borderRadius: '10px' }}>
+                <X size={18} />
+             </button>
+          </div>
+          <form onSubmit={handleInvite} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="space-y-4">
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nome Completo</label>
+              <input
+                type="text"
+                value={inviteName}
+                onChange={e => setInviteName(e.target.value)}
+                style={{ width: '100%', padding: '14px 18px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', fontSize: '14px' }}
+                placeholder="Ex: João Silva"
+                required
+              />
+            </div>
+            <div className="space-y-4">
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>E-mail Institucional</label>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+                style={{ width: '100%', padding: '14px 18px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', fontSize: '14px' }}
+                placeholder="joao@empresa.com.br"
+                required
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px' }}>
+              <div style={{ flex: 1 }} className="space-y-4">
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nível de Privilégio</label>
                 <select
                   value={inviteRole}
                   onChange={e => setInviteRole(e.target.value as 'USER' | 'ADMIN')}
-                  className="input-premium"
+                  style={{ width: '100%', padding: '14px 18px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', fontSize: '14px', cursor: 'pointer' }}
                 >
-                  <option value="USER">Membro</option>
-                  {user?.role === 'OWNER' && <option value="ADMIN">Admin</option>}
+                  <option value="USER" className="bg-[#020617]">Analista M&A (Padrão)</option>
+                  {user?.role === 'OWNER' && <option value="ADMIN" className="bg-[#020617]">Administrador</option>}
                 </select>
               </div>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button type="button" onClick={() => setShowForm(false)} className="text-sm text-slate-400 hover:text-slate-200 px-4 py-2">
-                Cancelar
-              </button>
-              <button type="submit" disabled={submitting} className="btn-primary text-sm px-6 py-2">
-                {submitting ? 'Enviando...' : 'Enviar Convite'}
+              <button type="submit" disabled={submitting} className={styles.btnBrand} style={{ height: '52px', padding: '0 32px' }}>
+                {submitting ? <Loader2 size={18} className="animate-spin" /> : 'Enviar'}
               </button>
             </div>
           </form>
-        )}
+        </div>
+      )}
 
-        {/* Members list */}
-        {loading ? (
-          <div className="flex items-center justify-center h-48">
-            <Loader2 className="w-7 h-7 text-blue-500 animate-spin" />
+      {loading ? (
+        <div style={{ display: 'grid', placeItems: 'center', height: '40vh' }}>
+          <Loader2 className="w-12 h-12 text-[#00b8b2] animate-spin" />
+        </div>
+      ) : (
+        <div className={styles.card} style={{ padding: 0, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.03)' }}>
+          <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+             <Activity size={16} className="text-[#00b8b2]" />
+             <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operadores Ativos do Workspace</h3>
           </div>
-        ) : (
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-            <div className="divide-y divide-slate-800/60">
-              {members.map(member => (
-                <div key={member.id} className="flex items-center justify-between px-6 py-4 hover:bg-slate-800/30 transition-colors">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 text-sm font-bold text-white">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {members.map((member, idx) => {
+              const cfg = ROLE_CONFIG[member.role] || ROLE_CONFIG.USER;
+              const RoleIcon = cfg.icon;
+              const isMe = member.id === user?.id;
+
+              return (
+                <div 
+                  key={member.id} 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    padding: '24px 32px', 
+                    borderBottom: idx < members.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+                    background: isMe ? 'rgba(0,184,178,0.02)' : 'transparent',
+                    transition: '0.2s'
+                  }}
+                  className="hover:bg-white/[0.01]"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px', minWidth: 0 }}>
+                    <div style={{ 
+                      width: '52px', 
+                      height: '52px', 
+                      background: isMe ? '#00b8b210' : 'rgba(255,255,255,0.02)', 
+                      borderRadius: '16px', 
+                      display: 'grid', 
+                      placeItems: 'center', 
+                      fontSize: '18px', 
+                      fontWeight: 900, 
+                      color: isMe ? '#00b8b2' : '#475569',
+                      border: `1px solid ${isMe ? 'rgba(0,184,178,0.2)' : 'rgba(255,255,255,0.05)'}`
+                    }}>
                       {member.fullName.charAt(0).toUpperCase()}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-white">{member.fullName}</span>
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${ROLE_COLORS[member.role]}`}>
-                          {ROLE_LABELS[member.role]}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#fff' }}>
+                           {member.fullName} {isMe && <span style={{ color: '#00b8b2', fontWeight: 700, marginLeft: '6px', fontSize: '11px', textTransform: 'uppercase' }}>(Master)</span>}
+                        </h4>
+                        <span className={`${styles.badge} ${cfg.cls}`} style={{ fontSize: '9px', padding: '3px 10px', fontWeight: 900 }}>
+                           <RoleIcon size={10} className="mr-2" />
+                           {cfg.label}
                         </span>
                         {member.isEmailVerified ? (
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500" aria-label="Conta ativa" />
+                          <div title="Identidade Verificada" style={{ color: '#10b981' }}><CheckCircle size={14} /></div>
                         ) : (
-                          <Clock className="w-3.5 h-3.5 text-amber-500" aria-label="Convite pendente" />
+                          <div title="Verificação Pendente" style={{ color: '#fb923c' }}><Clock size={14} className="animate-pulse" /></div>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">{member.email}</p>
+                      <div className="flex items-center gap-6">
+                         <div className="flex items-center gap-2">
+                           <Mail size={12} className="text-[#334155]" />
+                           <p style={{ margin: 0, fontSize: '13px', color: '#475569', fontWeight: 600 }}>{member.email}</p>
+                         </div>
+                         <div className="flex items-center gap-2">
+                           <Clock size={12} className="text-[#334155]" />
+                           <p style={{ margin: 0, fontSize: '11px', color: '#334155', fontWeight: 700, textTransform: 'uppercase' }}>Ingresso: {new Date(member.createdAt).toLocaleDateString('pt-BR')}</p>
+                         </div>
+                      </div>
                     </div>
                   </div>
 
-                  {canManage && member.id !== user?.id && (
-                    <div className="flex items-center gap-2 shrink-0">
+                  {canManage && !isMe && (
+                    <div style={{ display: 'flex', gap: '10px' }}>
                       <button
                         onClick={() => { setEditMember(member); setEditRole(member.role); }}
-                        className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors"
-                        title="Editar cargo"
+                        className={styles.btnGhost}
+                        style={{ width: '40px', height: '40px', padding: 0, borderRadius: '10px' }}
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 size={16} />
                       </button>
                       {(user?.role === 'OWNER' || member.role === 'USER') && (
                         <button
                           onClick={() => handleRemove(member)}
-                          className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
-                          title="Remover membro"
+                          className={styles.btnGhost}
+                          style={{ width: '40px', height: '40px', padding: 0, borderRadius: '10px', color: '#ef4444' }}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 size={16} />
                         </button>
                       )}
                     </div>
                   )}
                 </div>
-              ))}
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Role Management: High-Fidelity Modal */}
+      {editMember && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center', zIndex: 999 }}>
+          <div className={styles.card} style={{ width: '100%', maxWidth: '440px', padding: '40px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '20px', fontWeight: 900, color: '#fff' }}>Atualizar Nível de Acesso</h3>
+            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '32px', fontWeight: 600 }}>Redefina as permissões institucionais para o analista <b>{editMember.fullName}</b>.</p>
+            
+            <div style={{ marginBottom: '40px' }} className="space-y-4">
+               <label style={{ display: 'block', fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Privilégio Selecionado</label>
+               <select
+                 value={editRole}
+                 onChange={e => setEditRole(e.target.value)}
+                 style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', cursor: 'pointer' }}
+               >
+                 <option value="USER" className="bg-[#020617]">Analista M&A</option>
+                 <option value="ADMIN" className="bg-[#020617]">Administrador</option>
+                 {user?.role === 'OWNER' && <option value="OWNER" className="bg-[#020617]">Proprietário Master</option>}
+               </select>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setEditMember(null)} className={styles.btnGhost} style={{ height: '48px', padding: '0 24px', borderRadius: '12px' }}>
+                Cancelar
+              </button>
+              <button onClick={handleUpdateRole} disabled={submitting} className={styles.btnBrand} style={{ height: '48px', padding: '0 24px', borderRadius: '12px' }}>
+                {submitting ? <Loader2 size={18} className="animate-spin" /> : 'Confirmar Protocolo'}
+              </button>
             </div>
           </div>
-        )}
-
-        {/* Edit role modal */}
-        {editMember && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm space-y-4">
-              <h3 className="text-sm font-semibold text-white">Alterar cargo — {editMember.fullName}</h3>
-              <select
-                value={editRole}
-                onChange={e => setEditRole(e.target.value)}
-                className="input-premium w-full"
-              >
-                <option value="USER">Membro</option>
-                <option value="ADMIN">Admin</option>
-                {user?.role === 'OWNER' && <option value="OWNER">Proprietário</option>}
-              </select>
-              <div className="flex gap-3 justify-end">
-                <button onClick={() => setEditMember(null)} className="text-sm text-slate-400 hover:text-slate-200 px-4 py-2">
-                  Cancelar
-                </button>
-                <button onClick={handleUpdateRole} disabled={submitting} className="btn-primary text-sm px-6 py-2">
-                  {submitting ? 'Salvando...' : 'Salvar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
-    </AdminLayout>
+        </div>
+      )}
+    </>
   );
 }

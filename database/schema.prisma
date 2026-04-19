@@ -62,6 +62,17 @@ model User {
   proposals               Proposal[]
   tenant                  Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  // Institutional Profile Fields
+  phonePrimary            String?
+  phoneSecondary          String?
+  jobTitle                String?
+  companyName             String?
+  avatarUrl               String?
+  websiteUrl              String?
+  city                    String?
+  state                   String?
+  country                 String? @default("Brasil")
+
   @@unique([tenantId, email])
 }
 

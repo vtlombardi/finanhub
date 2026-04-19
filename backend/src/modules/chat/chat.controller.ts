@@ -45,8 +45,8 @@ export class ChatController {
    * Cria uma nova conversa (ex: suporte).
    */
   @Post('threads')
-  async createThread(@Body() body: { targetAdminId?: string; listingId?: string }, @Request() req) {
+  async createThread(@Body() body: { targetAdminId?: string; listingId?: string; leadId?: string }, @Request() req) {
     const { userId, tenantId } = req.user;
-    return this.chatService.createThread(userId, tenantId, body.targetAdminId, body.listingId);
+    return this.chatService.createThread(userId, tenantId, body.targetAdminId, body.listingId, body.leadId);
   }
 }

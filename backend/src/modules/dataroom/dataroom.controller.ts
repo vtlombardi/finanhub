@@ -38,12 +38,43 @@ export class DataRoomController {
     return this.dataRoomService.getDocumentsForInvestor(req.user.userId, listingId);
   }
 
+  /** Accept NDA for a listing */
+  @Post('accept-nda')
+  async acceptNda(@Request() req: any, @Body('listingId') listingId: string) {
+    return this.dataRoomService.acceptNda(req.user.userId, listingId);
+  }
+
+  /** Log a document view */
+  @Post(':documentId/view')
+  async logView(@Param('documentId') documentId: string, @Request() req: any) {
+    return this.dataRoomService.logDocumentView(req.user.userId, documentId);
+  }
+
   // ── Seller endpoints ───────────────────────────────────────────────────────
 
   /** All incoming requests for the tenant */
   @Get('requests')
   async getRequests(@Request() req: any) {
     return this.dataRoomService.getRequestsForTenant(req.user.tenantId);
+  }
+
+  /** Direct grant access (proactive release) */
+  @Post('seller/grant-access')
+  async grantAccess(
+    @Request() req: any,
+    @Body('listingId') listingId: string,
+    @Body('investorId') investorId: string,
+  ) {
+    return this.dataRoomService.grantDirectAccess(req.user.tenantId, listingId, investorId);
+  }
+
+  /** Get tracking logs for a listing */
+  @Get('seller/:listingId/tracking')
+  async getTracking(
+    @Param('listingId') listingId: string,
+    @Request() req: any,
+  ) {
+    return this.dataRoomService.getTrackingLogs(listingId, req.user.tenantId);
   }
 
   /** Approve or reject a request */

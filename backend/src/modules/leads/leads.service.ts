@@ -9,6 +9,9 @@ import { LeadStatus as PrismaLeadStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AdminLeadQueryDto, LeadStatus, UpdateLeadNotesDto, UpdateLeadStatusDto } from './dto/admin-lead.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotificationEvents } from '../notifications/notifications.events';
+import { MatchingService } from '../matching/matching.service';
 
 const ALLOWED_PROPOSAL_STATUS = ['OPEN', 'ACCEPTED', 'REJECTED', 'COUNTER_OFFER', 'WITHDRAWN'] as const;
 type AllowedProposalStatus = (typeof ALLOWED_PROPOSAL_STATUS)[number];
@@ -22,6 +25,8 @@ export class LeadsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly matchingService: MatchingService,
   ) {
     this.leadQueue = new Queue('ai-lead-qualification', {
       connection: {
@@ -47,19 +52,26 @@ export class LeadsService {
       throw new NotFoundException('Listing não encontrado ou indisponível');
     }
 
+    // Construir mensagem enriquecida com dados do formulário caso existam
+    let enrichedMessage = data.message || '';
+    const extraInfo = [];
+    if (data.userName) extraInfo.push(`Nome: ${data.userName}`);
+    if (data.userEmail) extraInfo.push(`E-mail: ${data.userEmail}`);
+    if (data.userPhone) extraInfo.push(`Tel: ${data.userPhone}`);
+    if (data.userCompany) extraInfo.push(`Empresa: ${data.userCompany}`);
+    if (data.objective) extraInfo.push(`Objetivo: ${data.objective}`);
+    if (data.investmentRange) extraInfo.push(`Faixa: ${data.investmentRange}`);
+
+    if (extraInfo.length > 0) {
+      enrichedMessage = `--- INFO DO INVESTIDOR ---\n${extraInfo.join('\n')}\n\n--- MENSAGEM ---\n${enrichedMessage}`;
+    }
+
     const lead = await (this.prisma.lead as any).create({
       data: {
         tenantId: listing.tenantId,
         listingId: data.listingId,
         investorId,
-        message: data.message ?? '',
-        userName: data.userName,
-        userEmail: data.userEmail,
-        userPhone: data.userPhone,
-        userCompany: data.userCompany,
-        objective: data.objective,
-        investmentRange: data.investmentRange,
-        mediationAccepted: data.mediationAccepted,
+        message: enrichedMessage,
         score: 0,
         status: PrismaLeadStatus.NEW,  // Pipeline sempre inicia em NEW
       },
@@ -80,6 +92,9 @@ export class LeadsService {
       console.error('[LeadsService] Falha ao enfileirar qualificação AI:', e);
     }
 
+    // Emitir evento para notificações inteligentes
+    this.eventEmitter.emit(NotificationEvents.LEAD_CREATED, { leadId: lead.id });
+
     return lead;
   }
 
@@ -91,7 +106,13 @@ export class LeadsService {
       this.prisma.lead.findMany({
         where,
         include: {
-          listing: { select: { id: true, title: true } },
+          listing: { 
+            select: { 
+              id: true, 
+              title: true,
+              dataRoomRequests: true 
+            } 
+          },
           investor: { select: { id: true, fullName: true, email: true } },
           proposals: true,
         },
@@ -102,8 +123,15 @@ export class LeadsService {
       this.prisma.lead.count({ where }),
     ]);
 
+    const enrichedLeads = await Promise.all(
+      data.map(async (lead) => {
+        const match = await this.matchingService.calculateMatchScore(lead.investorId, lead.listingId);
+        return { ...lead, match };
+      })
+    );
+
     return {
-      data,
+      data: enrichedLeads,
       pagination: {
         total,
         page,
@@ -165,7 +193,7 @@ export class LeadsService {
       throw new ForbiddenException('Acesso não autorizado');
     }
 
-    return (this.prisma.proposal as any).create({
+    const proposal = await (this.prisma.proposal as any).create({
       data: {
         lead: {
           connect: { id: leadId },
@@ -186,6 +214,11 @@ export class LeadsService {
         investor: true,
       },
     });
+
+    // Emitir evento para notificações inteligentes
+    this.eventEmitter.emit(NotificationEvents.PROPOSAL_RECEIVED, { proposalId: proposal.id });
+
+    return proposal;
   }
 
   async updateProposalStatus(
@@ -301,8 +334,64 @@ export class LeadsService {
   }
 
   /**
-   * Atualiza o status operacional de um lead no pipeline.
-   * Valida que o status pertence ao enum LeadStatus definido.
+   * Atualiza o status do lead para o tenant (vendedor).
+   * Inclui validação de propriedade e registro de auditoria.
+   */
+  async updateLeadStatus(id: string, tenantId: string, userId: string, dto: UpdateLeadStatusDto) {
+    if (!VALID_PIPELINE_STATUSES.includes(dto.status as LeadStatus)) {
+      throw new BadRequestException(`Status inválido: ${dto.status}`);
+    }
+
+    const lead = await (this.prisma.lead as any).findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException('Lead não encontrado');
+    if (lead.tenantId !== tenantId) throw new ForbiddenException('Acesso não autorizado ao lead');
+
+    const previousStatus = lead.status;
+
+    const updatedLead = await (this.prisma.lead as any).update({
+      where: { id },
+      data: { status: dto.status as PrismaLeadStatus },
+    });
+
+    // Registrar no log de auditoria para histórico (Pode ser estendido para LeadActivity se necessário)
+    try {
+      await (this.prisma.auditLog as any).create({
+        data: {
+          tenantId,
+          userId,
+          action: 'LEAD_STATUS_CHANGE',
+          entityType: 'LEAD',
+          entityId: id,
+          metadata: {
+            previousStatus,
+            newStatus: dto.status,
+            source: 'TENANT_DASHBOARD'
+          }
+        }
+      });
+    } catch (e) {
+      console.error('[LeadsService] Erro ao gravar audit log:', e);
+    }
+
+    return updatedLead;
+  }
+
+  /**
+   * Atualiza as notas internas do lead para o tenant.
+   */
+  async updateLeadNotes(id: string, tenantId: string, userId: string, dto: UpdateLeadNotesDto) {
+    const lead = await (this.prisma.lead as any).findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException('Lead não encontrado');
+    if (lead.tenantId !== tenantId) throw new ForbiddenException('Acesso não autorizado ao lead');
+
+    return (this.prisma.lead as any).update({
+      where: { id },
+      data: { internalNotes: dto.notes },
+    });
+  }
+
+  /**
+   * Atualiza o status operacional de um lead no pipeline (Admin).
    */
   async adminUpdateStatus(id: string, dto: UpdateLeadStatusDto) {
     if (!VALID_PIPELINE_STATUSES.includes(dto.status as LeadStatus)) {
@@ -322,7 +411,6 @@ export class LeadsService {
 
   /**
    * Atualiza notas internas de mediação (acesso restrito a ADMIN).
-   * As notas são estritamente privadas e nunca expostas a investidores ou anunciantes.
    */
   async adminUpdateNotes(id: string, dto: UpdateLeadNotesDto) {
     const lead = await (this.prisma.lead as any).findUnique({ where: { id } });

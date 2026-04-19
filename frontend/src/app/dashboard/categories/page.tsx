@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { api } from '@/services/api.client';
 import {
   Tag, Plus, Edit2, Trash2, Loader2, X, Check,
-  ChevronDown, ChevronUp, SlidersHorizontal,
+  ChevronDown, ChevronUp, SlidersHorizontal, Settings, Box, Database,
 } from 'lucide-react';
+import styles from '@/styles/Dashboard.module.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,18 +34,11 @@ interface CategoryAttribute {
 const ATTRIBUTE_TYPES = ['TEXT', 'NUMBER', 'BOOLEAN', 'URL'] as const;
 type AttributeType = (typeof ATTRIBUTE_TYPES)[number];
 
-const TYPE_LABELS: Record<AttributeType, string> = {
-  TEXT: 'Texto',
-  NUMBER: 'Número',
-  BOOLEAN: 'Sim/Não',
-  URL: 'URL',
-};
-
-const TYPE_BADGES: Record<AttributeType, string> = {
-  TEXT:    'bg-slate-700 text-slate-300 border-slate-600',
-  NUMBER:  'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  BOOLEAN: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
-  URL:     'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+const TYPE_CONFIG: Record<AttributeType, { label: string; cls: string }> = {
+  TEXT:    { label: 'Texto',   cls: styles.bGhost },
+  NUMBER:  { label: 'Número',  cls: styles.bBlue },
+  BOOLEAN: { label: 'Sim/Não', cls: styles.bViolet },
+  URL:     { label: 'Link/URL',cls: styles.bGreen },
 };
 
 const emptyForm = { name: '', slug: '', description: '', iconClass: '' };
@@ -121,190 +114,146 @@ function AttributesPanel({ categoryId, canManage }: { categoryId: string; canMan
   };
 
   return (
-    <div className="border-t border-slate-800 bg-slate-950/40 px-6 py-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-          <SlidersHorizontal className="w-3.5 h-3.5" /> Atributos customizados
-        </span>
-        {canManage && (
-          <button
-            onClick={() => setShowForm(s => !s)}
-            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" /> Novo atributo
-          </button>
-        )}
-      </div>
-
-      {error && (
-        <div className="mb-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">{error}</div>
-      )}
-
-      {/* Create form */}
-      {showForm && (
-        <form onSubmit={handleCreate} className="mb-4 bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">
-                Chave <span className="text-slate-600 font-normal">(máquina, ex: annual_revenue)</span>
-              </label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value.replace(/\s+/g, '_').toLowerCase() }))}
-                className="input-premium w-full text-sm font-mono"
-                placeholder="annual_revenue"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Label exibida ao usuário</label>
-              <input
-                type="text"
-                value={form.label}
-                onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
-                className="input-premium w-full text-sm"
-                placeholder="Receita Anual"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Tipo</label>
-              <select
-                value={form.type}
-                onChange={e => setForm(f => ({ ...f, type: e.target.value as AttributeType }))}
-                className="input-premium w-full text-sm"
+    <div style={{ padding: '0 24px 24px', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 0, left: '44px', width: '2px', height: '20px', background: 'rgba(255,255,255,0.05)' }} />
+        <div className={styles.card} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', padding: '24px' }}>
+          <div className="flex items-center justify-between mb-6">
+            <h4 style={{ margin: 0, fontSize: '11px', fontWeight: 800, color: '#8fa6c3', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Database className="w-3.5 h-3.5 text-[#00b8b2]" /> Estrutura de Atributos Customizados
+            </h4>
+            {canManage && (
+              <button
+                onClick={() => setShowForm(s => !s)}
+                className={styles.btnGhost}
+                style={{ height: '32px', fontSize: '11px', border: 'none', background: 'rgba(255,255,255,0.03)' }}
               >
-                {ATTRIBUTE_TYPES.map(t => (
-                  <option key={t} value={t}>{TYPE_LABELS[t]}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-2 pt-5">
-              <input
-                type="checkbox"
-                id={`req-${categoryId}`}
-                checked={form.isRequired}
-                onChange={e => setForm(f => ({ ...f, isRequired: e.target.checked }))}
-                className="w-4 h-4 rounded accent-blue-500"
-              />
-              <label htmlFor={`req-${categoryId}`} className="text-xs text-slate-400 cursor-pointer">
-                Preenchimento obrigatório
-              </label>
-            </div>
+                <Plus className="w-3.5 h-3.5 mr-1" /> Novo campo
+              </button>
+            )}
           </div>
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={() => { setShowForm(false); setForm(emptyAttrForm); }}
-              className="text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5"
-            >
-              Cancelar
-            </button>
-            <button type="submit" disabled={submitting} className="btn-primary text-xs px-4 py-1.5">
-              {submitting ? 'Salvando...' : 'Adicionar'}
-            </button>
-          </div>
-        </form>
-      )}
 
-      {/* Attribute list */}
-      {loading ? (
-        <div className="flex justify-center py-4">
-          <Loader2 className="w-5 h-5 text-slate-600 animate-spin" />
-        </div>
-      ) : attrs.length === 0 && !showForm ? (
-        <p className="text-xs text-slate-700 italic py-1">
-          Nenhum atributo customizado. Use para capturar dados específicos (ex: Receita Anual, Número de Funcionários).
-        </p>
-      ) : (
-        <div className="space-y-1.5">
-          {attrs.map(attr => (
-            <div key={attr.id} className="bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2">
-              {editAttrId === attr.id ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
-                  <div>
-                    <label className="block text-[10px] text-slate-600 mb-1">Label</label>
-                    <input
-                      type="text"
-                      value={editAttrForm.label}
-                      onChange={e => setEditAttrForm(f => ({ ...f, label: e.target.value }))}
-                      className="input-premium w-full text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-600 mb-1">Tipo</label>
-                    <select
-                      value={editAttrForm.type}
-                      onChange={e => setEditAttrForm(f => ({ ...f, type: e.target.value as AttributeType }))}
-                      className="input-premium w-full text-xs"
-                    >
-                      {ATTRIBUTE_TYPES.map(t => (
-                        <option key={t} value={t}>{TYPE_LABELS[t]}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editAttrForm.isRequired}
-                        onChange={e => setEditAttrForm(f => ({ ...f, isRequired: e.target.checked }))}
-                        className="w-3.5 h-3.5 rounded accent-blue-500"
-                      />
-                      Obrigatório
-                    </label>
-                    <div className="flex gap-1">
-                      <button onClick={() => setEditAttrId(null)} className="p-1 text-slate-500 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => handleUpdate(attr.id)} disabled={submitting} className="p-1 text-emerald-400 hover:bg-emerald-500/10 rounded transition-colors disabled:opacity-50">
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+          {error && (
+            <div style={{ marginBottom: '16px', fontSize: '12px', color: '#ef4444' }}>{error}</div>
+          )}
+
+          {/* Create form */}
+          {showForm && (
+            <form onSubmit={handleCreate} style={{ marginBottom: '24px', padding: '20px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', color: '#64748b', fontWeight: 700, marginBottom: '6px' }}>KEY (SISTEMA)</label>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value.replace(/\s+/g, '_').toLowerCase() }))}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#020617', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '13px', fontFamily: 'monospace' }}
+                    placeholder="ex: faturamento_anual"
+                    required
+                  />
                 </div>
-              ) : (
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                    <span className="text-xs font-medium text-slate-300">{attr.label}</span>
-                    <span className="text-[10px] font-mono text-slate-600 bg-slate-800 px-1.5 py-0.5 rounded">{attr.name}</span>
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${TYPE_BADGES[attr.type as AttributeType] ?? TYPE_BADGES.TEXT}`}>
-                      {TYPE_LABELS[attr.type as AttributeType] ?? attr.type}
-                    </span>
-                    {attr.isRequired && (
-                      <span className="text-[10px] text-amber-500">obrigatório</span>
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', color: '#64748b', fontWeight: 700, marginBottom: '6px' }}>LABEL (LISTAGEM)</label>
+                  <input
+                    type="text"
+                    value={form.label}
+                    onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#020617', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '13px' }}
+                    placeholder="Ex: Faturamento Anual"
+                    required
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', color: '#64748b', fontWeight: 700, marginBottom: '6px' }}>TIPO DE DADO</label>
+                  <select
+                    value={form.type}
+                    onChange={e => setForm(f => ({ ...f, type: e.target.value as AttributeType }))}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#020617', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '13px' }}
+                  >
+                    {ATTRIBUTE_TYPES.map(t => (
+                      <option key={t} value={t}>{TYPE_CONFIG[t].label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#8fa6c3' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.isRequired}
+                      onChange={e => setForm(f => ({ ...f, isRequired: e.target.checked }))}
+                    />
+                    Obrigatório
+                  </label>
+                  <div style={{ flex: 1 }} />
+                  <button type="submit" disabled={submitting} className={styles.btnBrand} style={{ height: '36px', fontSize: '11px' }}>
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar Campo'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
+
+          {/* List */}
+          {loading ? (
+            <div style={{ display: 'grid', placeItems: 'center', padding: '24px' }}>
+               <Loader2 className="w-5 h-5 text-[#00b8b2] animate-spin" />
+            </div>
+          ) : attrs.length === 0 ? (
+            <p style={{ margin: 0, fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>Esta categoria ainda utiliza apenas campos padrão do terminal.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {attrs.map(attr => {
+                const isEditing = editAttrId === attr.id;
+                const cfg = TYPE_CONFIG[attr.type as AttributeType] || TYPE_CONFIG.TEXT;
+
+                return (
+                  <div key={attr.id} style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: isEditing ? '1px solid rgba(0,184,178,0.2)' : '1px solid transparent' }}>
+                    {isEditing ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                        <input
+                          type="text"
+                          value={editAttrForm.label}
+                          onChange={e => setEditAttrForm(f => ({ ...f, label: e.target.value }))}
+                          style={{ flex: 1, padding: '6px 10px', background: '#000', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', borderRadius: '4px' }}
+                        />
+                        <select
+                          value={editAttrForm.type}
+                          onChange={e => setEditAttrForm(f => ({ ...f, type: e.target.value as AttributeType }))}
+                          style={{ padding: '6px 10px', background: '#000', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', borderRadius: '4px' }}
+                        >
+                          {ATTRIBUTE_TYPES.map(t => (
+                            <option key={t} value={t}>{TYPE_CONFIG[t].label}</option>
+                          ))}
+                        </select>
+                        <button onClick={() => handleUpdate(attr.id)} className={styles.btnBrand} style={{ width: '30px', height: '30px', padding: 0 }}><Check className="w-3 h-3" /></button>
+                        <button onClick={() => setEditAttrId(null)} className={styles.btnGhost} style={{ width: '30px', height: '30px', padding: 0 }}><X className="w-3 h-3" /></button>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                           <span style={{ fontSize: '13px', fontWeight: 600, color: '#eef6ff' }}>{attr.label}</span>
+                           <span style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>{attr.name}</span>
+                           <span className={`${styles.badge} ${cfg.cls}`} style={{ fontSize: '9px', padding: '1px 8px' }}>{cfg.label}</span>
+                           {attr.isRequired && <span style={{ fontSize: '9px', color: '#fb923c', fontWeight: 800, textTransform: 'uppercase' }}>Obrigatório</span>}
+                        </div>
+                        {canManage && (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button onClick={() => { setEditAttrId(attr.id); setEditAttrForm({ label: attr.label, type: attr.type as AttributeType, isRequired: attr.isRequired }); }} className={styles.btnGhost} style={{ width: '28px', height: '28px', padding: 0, border: 'none' }}><Edit2 className="w-3 h-3" /></button>
+                            <button onClick={() => handleDelete(attr)} className={styles.btnGhost} style={{ width: '28px', height: '28px', padding: 0, border: 'none', color: '#ef4444' }}><Trash2 className="w-3 h-3" /></button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
-                  {canManage && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => { setEditAttrId(attr.id); setEditAttrForm({ label: attr.label, type: attr.type as AttributeType, isRequired: attr.isRequired }); }}
-                        className="p-1.5 text-slate-600 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(attr)}
-                        className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
-                        title="Remover"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+                );
+              })}
             </div>
-          ))}
+          )}
         </div>
-      )}
     </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CategoriesPage() {
   useAuthGuard();
@@ -322,7 +271,6 @@ export default function CategoriesPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', description: '', iconClass: '' });
 
-  // Which category has its attributes panel open
   const [expandedAttrId, setExpandedAttrId] = useState<string | null>(null);
 
   const canManage = user?.role === 'OWNER' || user?.role === 'ADMIN';
@@ -378,7 +326,7 @@ export default function CategoriesPage() {
         description: editForm.description.trim() || undefined,
         iconClass: editForm.iconClass.trim() || undefined,
       });
-      setSuccess('Categoria atualizada.');
+      setSuccess('Categoria atualizada com sucesso.');
       setEditId(null);
       load();
     } catch (err: any) {
@@ -394,7 +342,7 @@ export default function CategoriesPage() {
     setSuccess('');
     try {
       await api.delete(`/categories/${cat.id}`);
-      setSuccess(`Categoria "${cat.name}" excluída.`);
+      setSuccess(`Categoria "${cat.name}" removida.`);
       load();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Erro ao excluir categoria.');
@@ -402,249 +350,172 @@ export default function CategoriesPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="min-h-screen bg-[#020617] text-slate-100 p-6">
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Tag className="w-6 h-6 text-blue-500" /> Categorias
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Gerencie categorias e seus atributos customizados.
-            </p>
-          </div>
-          {canManage && (
-            <button
-              onClick={() => { setShowForm(!showForm); setError(''); setSuccess(''); }}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Nova Categoria
-            </button>
-          )}
+    <>
+      {/* Header */}
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+             <Tag className="w-7 h-7 text-[#00b8b2]" /> Gestão de Segmentos
+          </h1>
+          <p>Configure as categorias de ativos e a taxonomia de dados customizados.</p>
         </div>
-
-        {/* Feedback */}
-        {error && (
-          <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>
-        )}
-        {success && (
-          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">{success}</div>
-        )}
-
-        {/* Create form */}
-        {showForm && (
-          <form
-            onSubmit={handleCreate}
-            className="mb-6 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4"
+        {canManage && (
+          <button
+            onClick={() => { setShowForm(!showForm); setError(''); setSuccess(''); }}
+            className={styles.btnBrand}
+            style={{ height: '44px', padding: '0 24px', display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            <h3 className="text-sm font-semibold text-white">Nova Categoria</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Plus className="w-4 h-4" /> Nova Categoria
+          </button>
+        )}
+      </div>
+
+      {/* Internal Feedback Area */}
+      {(error || success) && (
+        <div className={styles.card} style={{ 
+          marginBottom: '24px', 
+          padding: '12px 20px', 
+          border: success ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+          color: success ? '#10b981' : '#ef4444',
+          fontSize: '14px'
+        }}>
+          {error || success}
+        </div>
+      )}
+
+      {/* Creation form */}
+      {showForm && (
+        <div className={styles.card} style={{ marginBottom: '32px', padding: '32px' }}>
+           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#fff' }}>Explorar Novo Segmento</h3>
+              <button onClick={() => setShowForm(false)} className={styles.btnGhost} style={{ width: '32px', height: '32px', padding: 0 }}>
+                 <X className="w-4 h-4" />
+              </button>
+           </div>
+           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Nome <span className="text-red-400">*</span></label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#8fa6c3', textTransform: 'uppercase', marginBottom: '8px' }}>Nome Comercial</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  className="input-premium w-full"
-                  placeholder="Tecnologia (SaaS)"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff' }}
+                  placeholder="Ex: Startups SaaS"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  Slug
-                  <span className="ml-1 text-slate-600">(gerado automaticamente se vazio)</span>
-                </label>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#8fa6c3', textTransform: 'uppercase', marginBottom: '8px' }}>Custom Slug (URL)</label>
                 <input
                   type="text"
                   value={form.slug}
                   onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
-                  className="input-premium w-full font-mono"
-                  placeholder="tecnologia-saas"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff' }}
+                  placeholder="ex: startups-saas"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Descrição</label>
+              <div className="md:col-span-2">
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#8fa6c3', textTransform: 'uppercase', marginBottom: '8px' }}>Descrição Institucional</label>
                 <input
                   type="text"
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  className="input-premium w-full"
-                  placeholder="Empresas de software como serviço"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff' }}
+                  placeholder="Breve resumo da categoria para o marketplace"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Ícone CSS (opcional)</label>
-                <input
-                  type="text"
-                  value={form.iconClass}
-                  onChange={e => setForm(f => ({ ...f, iconClass: e.target.value }))}
-                  className="input-premium w-full font-mono"
-                  placeholder="fa-laptop"
-                />
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }} className="md:col-span-2">
+                 <button type="submit" disabled={submitting} className={styles.btnBrand} style={{ height: '48px', padding: '0 40px' }}>
+                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar Registro'}
+                 </button>
               </div>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setForm(emptyForm); }}
-                className="text-sm text-slate-400 hover:text-slate-200 px-4 py-2"
-              >
-                Cancelar
-              </button>
-              <button type="submit" disabled={submitting} className="btn-primary text-sm px-6 py-2">
-                {submitting ? 'Criando...' : 'Criar Categoria'}
-              </button>
-            </div>
-          </form>
-        )}
+           </form>
+        </div>
+      )}
 
-        {/* List */}
-        {loading ? (
-          <div className="flex items-center justify-center h-48">
-            <Loader2 className="w-7 h-7 text-blue-500 animate-spin" />
-          </div>
-        ) : categories.length === 0 ? (
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-12 text-center">
-            <Tag className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">Nenhuma categoria cadastrada.</p>
-            <p className="text-sm text-slate-600 mt-1">
-              Crie a primeira clicando em &ldquo;Nova Categoria&rdquo;.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/60">
-            {categories.map(cat => (
-              <div key={cat.id}>
-                {/* Category row */}
-                <div className="px-6 py-4 hover:bg-slate-800/20 transition-colors">
-                  {editId === cat.id ? (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-xs text-slate-500 mb-1">Nome</label>
-                          <input
-                            type="text"
-                            value={editForm.name}
-                            onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                            className="input-premium w-full text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-slate-500 mb-1">Descrição</label>
-                          <input
-                            type="text"
-                            value={editForm.description}
-                            onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                            className="input-premium w-full text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-slate-500 mb-1">Ícone CSS</label>
-                          <input
-                            type="text"
-                            value={editForm.iconClass}
-                            onChange={e => setEditForm(f => ({ ...f, iconClass: e.target.value }))}
-                            className="input-premium w-full text-sm font-mono"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => setEditId(null)}
-                          className="p-1.5 text-slate-500 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleUpdate(cat.id)}
-                          disabled={submitting}
-                          className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                      </div>
+      {/* Main categories list */}
+      {loading ? (
+        <div style={{ display: 'grid', placeItems: 'center', height: '40vh' }}>
+          <Loader2 className="w-10 h-10 text-[#00b8b2] animate-spin" />
+        </div>
+      ) : categories.length === 0 ? (
+        <div className={styles.card} style={{ textAlign: 'center', padding: '100px 20px' }}>
+           <Box className="w-12 h-12 text-[#64748b] mx-auto mb-4 opacity-30" />
+           <p style={{ color: '#8fa6c3' }}>Nenhum segmento configurado no sistema.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {categories.map(cat => {
+            const isEditing = editId === cat.id;
+
+            return (
+              <div key={cat.id} className={styles.card} style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  {isEditing ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                       <input
+                          type="text"
+                          value={editForm.name}
+                          onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                          style={{ flex: 1, padding: '10px 14px', background: '#000', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '14px', borderRadius: '8px' }}
+                        />
+                        <button onClick={() => handleUpdate(cat.id)} className={styles.btnBrand} style={{ width: '40px', height: '40px', padding: 0 }}><Check className="w-5 h-5" /></button>
+                        <button onClick={() => setEditId(null)} className={styles.btnGhost} style={{ width: '40px', height: '40px', padding: 0 }}><X className="w-5 h-5" /></button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                          {cat.iconClass
-                            ? <i className={`fa ${cat.iconClass} text-blue-400 text-sm`} />
-                            : <Tag className="w-4 h-4 text-slate-500" />
-                          }
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-semibold text-white">{cat.name}</span>
-                            <span className="text-[10px] font-mono text-slate-600 bg-slate-800 px-1.5 py-0.5 rounded">{cat.slug}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                              cat._count.listings > 0
-                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                : 'bg-slate-800 text-slate-600 border-slate-700'
-                            }`}>
-                              {cat._count.listings} anúncio{cat._count.listings !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                          {cat.description && (
-                            <p className="text-xs text-slate-500 mt-0.5 truncate">{cat.description}</p>
-                          )}
-                        </div>
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', minWidth: 0 }}>
+                         <div style={{ width: '50px', height: '50px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', display: 'grid', placeItems: 'center' }}>
+                           {cat.iconClass ? <i className={`fa ${cat.iconClass} text-[#00b8b2] text-xl`} /> : <Tag className="w-6 h-6 text-[#64748b]" />}
+                         </div>
+                         <div style={{ minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2px' }}>
+                               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#fff' }}>{cat.name}</h3>
+                               <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '6px', fontFamily: 'monospace' }}>{cat.slug}</span>
+                               <span className={`${styles.badge} ${cat._count.listings > 0 ? styles.bBlue : styles.bGhost}`} style={{ fontSize: '10px' }}>
+                                 {cat._count.listings} ativos
+                               </span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '13px', color: '#8fa6c3', opacity: 0.6 }} className="truncate max-w-[500px]">{cat.description || 'Nenhuma descrição técnica adicionada.'}</p>
+                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
-                        {/* Toggle attributes panel */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <button
                           onClick={() => setExpandedAttrId(expandedAttrId === cat.id ? null : cat.id)}
-                          className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
-                            expandedAttrId === cat.id
-                              ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                              : 'border-slate-700 text-slate-500 hover:border-slate-600 hover:text-slate-300'
-                          }`}
-                          title="Atributos"
+                          className={styles.btnGhost}
+                          style={{ height: '36px', fontSize: '12px', color: expandedAttrId === cat.id ? '#00b8b2' : '#8fa6c3' }}
                         >
-                          <SlidersHorizontal className="w-3.5 h-3.5" />
-                          {expandedAttrId === cat.id
-                            ? <ChevronUp className="w-3 h-3" />
-                            : <ChevronDown className="w-3 h-3" />
-                          }
+                          <Settings className="w-4 h-4 mr-2" /> Estrutura
+                          {expandedAttrId === cat.id ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
                         </button>
 
                         {canManage && (
-                          <>
-                            <button
-                              onClick={() => startEdit(cat)}
-                              className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors"
-                              title="Editar"
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button onClick={() => startEdit(cat)} className={styles.btnGhost} style={{ width: '36px', height: '36px', padding: 0, border: 'none' }}><Edit2 className="w-4 h-4" /></button>
+                            <button 
+                               onClick={() => handleDelete(cat)} 
+                               disabled={cat._count.listings > 0} 
+                               className={styles.btnGhost} 
+                               style={{ width: '36px', height: '36px', padding: 0, border: 'none', color: '#ef4444', opacity: cat._count.listings > 0 ? 0.2 : 1 }}
                             >
-                              <Edit2 className="w-4 h-4" />
+                               <Trash2 className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => handleDelete(cat)}
-                              disabled={cat._count.listings > 0}
-                              className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
-                              title={cat._count.listings > 0 ? 'Remova os anúncios vinculados primeiro' : 'Excluir'}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
+                          </div>
                         )}
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
 
-                {/* Attributes panel (lazy — only mounts when opened) */}
                 {expandedAttrId === cat.id && (
                   <AttributesPanel categoryId={cat.id} canManage={canManage} />
                 )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </AdminLayout>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }

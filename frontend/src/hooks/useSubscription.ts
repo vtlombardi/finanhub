@@ -36,7 +36,7 @@ export function useSubscription() {
   };
 
   const checkLimit = (metric: keyof SubscriptionUsage['usage']) => {
-    if (!usage) return { ok: false, percent: 0, current: 0, limit: 0 };
+    if (!usage || !usage.usage[metric]) return { ok: false, percent: 0, current: 0, limit: 0 };
     const m = usage.usage[metric];
     if (m.unlimited) return { ok: true, percent: 0, current: m.current, limit: -1 };
     const percent = (m.current / m.limit) * 100;

@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { PlanGate } from '@/components/plans/PlanGate';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { api } from '@/services/api.client';
 import {
   Lock, CheckCircle2, XCircle, Clock, FileText,
-  Plus, Trash2, Loader2, ChevronDown, ChevronUp, Upload,
+  Plus, Trash2, Loader2, ChevronDown, ChevronUp, Upload, Shield, Zap, Search, Eye, Download, Info
 } from 'lucide-react';
+import styles from '@/styles/Dashboard.module.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,15 +31,15 @@ interface DataRoomDocument {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG = {
-  PENDING:  { label: 'Aguardando',  cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30',   icon: Clock },
-  APPROVED: { label: 'Aprovado',    cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: CheckCircle2 },
-  REJECTED: { label: 'Rejeitado',   cls: 'bg-red-500/15 text-red-400 border-red-500/30',          icon: XCircle },
+const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: any; color: string }> = {
+  PENDING:  { label: 'Protocolo Pendente',  cls: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Clock, color: '#f59e0b' },
+  APPROVED: { label: 'Acesso Liberado',    cls: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2, color: '#10b981' },
+  REJECTED: { label: 'Acesso Revogado',   cls: 'bg-red-500/10 text-red-500 border-red-500/20', icon: XCircle, color: '#ef4444' },
 };
 
 const FILTER_OPTIONS = [
-  { label: 'Todos',        value: 'all'      },
-  { label: 'Aguardando',   value: 'PENDING'  },
+  { label: 'Todos os Protocolos', value: 'all' },
+  { label: 'Pendentes',    value: 'PENDING'  },
   { label: 'Aprovados',    value: 'APPROVED' },
   { label: 'Rejeitados',   value: 'REJECTED' },
 ];
@@ -68,7 +68,7 @@ function DocumentsPanel({ listingId }: { listingId: string }) {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!docName.trim()) { setError('Informe um nome para o documento antes de fazer upload.'); return; }
+    if (!docName.trim()) { setError('Identifique o documento antes do upload.'); return; }
     setUploading(true);
     setError('');
     try {
@@ -86,7 +86,7 @@ function DocumentsPanel({ listingId }: { listingId: string }) {
       setShowAddForm(false);
       loadDocs();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Erro ao adicionar documento.');
+      setError(err?.response?.data?.message || 'Erro no protocolo de upload.');
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -94,7 +94,7 @@ function DocumentsPanel({ listingId }: { listingId: string }) {
   };
 
   const handleDelete = async (doc: DataRoomDocument) => {
-    if (!confirm(`Remover "${doc.name}" do Data Room?`)) return;
+    if (!confirm(`Remover "${doc.name}" do repositório seguro?`)) return;
     try {
       await api.delete(`/dataroom/documents/${doc.id}`);
       loadDocs();
@@ -102,74 +102,103 @@ function DocumentsPanel({ listingId }: { listingId: string }) {
   };
 
   return (
-    <div className="border-t border-slate-800 bg-slate-950/40 px-5 py-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-          <FileText className="w-3.5 h-3.5" /> Documentos no Data Room
-        </span>
+    <div style={{ padding: '32px', background: 'rgba(0,0,0,0.25)', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+        <h4 style={{ margin: 0, fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <FileText size={14} className="text-[#00b8b2]" /> Repositório de Auditoria M&A
+        </h4>
         <button
           onClick={() => { setShowAddForm(s => !s); setError(''); }}
-          className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+          className={styles.btnBrand}
+          style={{ height: '36px', fontSize: '11px', padding: '0 16px', borderRadius: '8px' }}
         >
-          <Plus className="w-3.5 h-3.5" /> Adicionar
+          <Plus size={14} className="mr-2" /> Indexar Novo Documento
         </button>
       </div>
 
       {error && (
-        <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
+        <div style={{ marginBottom: '24px', padding: '12px 20px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', fontSize: '12px', fontWeight: 700 }}>
+          {error}
+        </div>
       )}
 
       {showAddForm && (
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 space-y-2">
-          <input
-            type="text"
-            value={docName}
-            onChange={e => setDocName(e.target.value)}
-            className="input-premium w-full text-sm"
-            placeholder="Nome do documento (ex: DRE 2024)"
-          />
-          <label className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-            uploading
-              ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-              : 'bg-blue-600/20 border border-blue-500/30 text-blue-400 hover:bg-blue-600/30'
-          }`}>
-            {uploading
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : <Upload className="w-3.5 h-3.5" />
-            }
-            {uploading ? 'Enviando...' : 'Selecionar arquivo'}
-            <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
-          </label>
+        <div className={styles.card} style={{ marginBottom: '32px', padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <input
+              type="text"
+              value={docName}
+              onChange={e => setDocName(e.target.value)}
+              style={{ flex: 1, padding: '12px 20px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', fontSize: '13px' }}
+              placeholder="Nome técnico do documento (ex: DRE Auditado 2024)"
+            />
+            <label style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px', 
+              background: uploading ? 'rgba(255,255,255,0.03)' : '#00b8b2', 
+              color: '#fff', 
+              padding: '0 24px', 
+              borderRadius: '10px', 
+              fontSize: '13px', 
+              fontWeight: 800, 
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+              border: 'none'
+            }}>
+              {uploading
+                ? <Loader2 size={16} className="animate-spin" />
+                : <Upload size={16} />
+              }
+              {uploading ? 'Processando...' : 'Iniciar Upload'}
+              <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+            </label>
+          </div>
         </div>
       )}
 
       {loading ? (
-        <div className="flex justify-center py-3">
-          <Loader2 className="w-4 h-4 text-slate-600 animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+          <Loader2 size={32} className="text-[#00b8b2] animate-spin" />
         </div>
       ) : docs.length === 0 ? (
-        <p className="text-xs text-slate-700 italic">Nenhum documento adicionado ainda.</p>
+        <div style={{ textAlign: 'center', padding: '60px 0' }}>
+           <div style={{ background: 'rgba(255,255,255,0.02)', width: '56px', height: '56px', borderRadius: '16px', margin: '0 auto 20px', display: 'grid', placeItems: 'center' }}>
+              <Shield size={24} className="text-[#1e293b]" />
+           </div>
+           <p style={{ fontSize: '14px', color: '#475569', fontWeight: 700 }}>Nenhum documento restrito configurado para este ativo.</p>
+        </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {docs.map(doc => (
-            <div key={doc.id} className="flex items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <div key={doc.id} className={styles.card} style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
+                <div style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', display: 'grid', placeItems: 'center' }}>
+                  <FileText size={18} className="text-[#00b8b2]" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: '14px', fontWeight: 800, color: '#eef6ff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</p>
+                  <p style={{ fontSize: '10px', color: '#475569', margin: '2px 0 0', fontWeight: 700, textTransform: 'uppercase' }}>{doc.mediaType.split('/')[1] || 'DOC'}</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <a
                   href={doc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-slate-300 hover:text-blue-400 truncate transition-colors"
+                  className={styles.btnGhost}
+                  style={{ width: '36px', height: '36px', padding: 0, borderRadius: '8px' }}
+                  title="Visualizar Documento"
                 >
-                  {doc.name}
+                  <Eye size={14} />
                 </a>
+                <button
+                  onClick={() => handleDelete(doc)}
+                  className={styles.btnGhost}
+                  style={{ width: '36px', height: '36px', padding: 0, borderRadius: '8px', color: '#ef4444' }}
+                  title="Remover do Repositório"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
-              <button
-                onClick={() => handleDelete(doc)}
-                className="p-1 text-slate-600 hover:text-red-400 hover:bg-slate-800 rounded transition-colors shrink-0"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
             </div>
           ))}
         </div>
@@ -195,7 +224,7 @@ export default function DataRoomPage() {
       const { data } = await api.get<DataRoomRequest[]>('/dataroom/requests');
       setRequests(data);
     } catch {
-      setFeedback({ type: 'error', msg: 'Erro ao carregar solicitações.' });
+      setFeedback({ type: 'error', msg: 'Erro na sincronização de protocolos.' });
     } finally {
       setLoading(false);
     }
@@ -210,11 +239,11 @@ export default function DataRoomPage() {
       await api.patch(`/dataroom/requests/${requestId}`, { status });
       setFeedback({
         type: 'success',
-        msg: status === 'APPROVED' ? 'Acesso aprovado. O investidor foi notificado.' : 'Solicitação rejeitada.',
+        msg: status === 'APPROVED' ? 'Acesso privilegiado concedido.' : 'Acesso ao repositório revogado.',
       });
       load();
     } catch (err: any) {
-      setFeedback({ type: 'error', msg: err?.response?.data?.message || 'Erro ao processar.' });
+      setFeedback({ type: 'error', msg: err?.response?.data?.message || 'Erro no processamento da decisão.' });
     } finally {
       setSubmitting(null);
     }
@@ -223,172 +252,191 @@ export default function DataRoomPage() {
   const filtered = requests.filter(r => filter === 'all' || r.status === filter);
   const pendingCount = requests.filter(r => r.status === 'PENDING').length;
 
-  // Group by listing for the documents panel (unique listing IDs in filtered)
   const uniqueListingIds = [...new Set(requests.map(r => r.listing.id))];
 
   return (
-    <AdminLayout>
-      <div className="min-h-screen bg-[#020617] text-slate-100 p-6">
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Lock className="w-6 h-6 text-blue-500" /> Data Room
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Gerencie documentos confidenciais e solicitações de acesso dos investidores.
-            </p>
-          </div>
-          {pendingCount > 0 && (
-            <span className="text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-full">
-              {pendingCount} aguardando aprovação
-            </span>
-          )}
+    <>
+      <div className={styles.pageHeader}>
+        <div>
+          <h1>Virtual Data Room</h1>
+          <p>Terminal de custódia documental e gestão de privilégios de auditoria.</p>
         </div>
-
-        {/* Feedback */}
-        {feedback && (
-          <div className={`mb-4 p-3 rounded-xl text-sm border ${
-            feedback.type === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-              : 'bg-red-500/10 border-red-500/20 text-red-400'
-          }`}>
-            {feedback.msg}
+        {pendingCount > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', padding: '10px 20px', borderRadius: '12px' }}>
+             <Zap size={16} className="text-amber-500 animate-pulse" />
+             <span style={{ fontSize: '12px', fontWeight: 900, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{pendingCount} Protocolos Pendentes</span>
           </div>
         )}
+      </div>
 
-        {/* Documents management — per listing */}
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold text-slate-400 mb-3">Documentos por Anúncio</h2>
-          {uniqueListingIds.length === 0 && !loading ? (
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 text-center">
-              <FileText className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">Nenhum anúncio com solicitações ainda.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {uniqueListingIds.map(lid => {
-                const req = requests.find(r => r.listing.id === lid)!;
-                const isOpen = expandedListingId === lid;
-                return (
-                  <div key={lid} className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-                    <button
-                      onClick={() => setExpandedListingId(isOpen ? null : lid)}
-                      className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-800/20 transition-colors text-left"
-                    >
-                      <span className="text-sm font-medium text-white">{req.listing.title}</span>
-                      {isOpen ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
-                    </button>
-                    {isOpen && (
-                      <PlanGate
-                        minTier="PROFESSIONAL"
-                        variant="blur"
-                        title="Virtual Data Room Premium"
-                        description="O gerenciamento de documentos confidenciais exige o plano Professional ou Elite para garantir a segurança e conformidade do deal."
-                      >
-                        <DocumentsPanel listingId={lid} />
-                      </PlanGate>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+      {feedback && (
+        <div style={{ 
+          marginBottom: '40px', 
+          padding: '20px 24px', 
+          borderRadius: '12px',
+          border: feedback.type === 'success' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+          background: feedback.type === 'success' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+          color: feedback.type === 'success' ? '#10b981' : '#ef4444',
+          fontSize: '14px',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          {feedback.type === 'success' ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+          {feedback.msg}
+        </div>
+      )}
+
+      {/* Repositories Section */}
+      <div style={{ marginBottom: '64px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+           <div style={{ width: '4px', height: '16px', background: '#00b8b2', borderRadius: '4px' }}></div>
+           <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#fff', margin: 0 }}>Gestão de Repositórios por Ativo</h2>
         </div>
 
-        {/* Access requests */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-slate-400">Solicitações de Acesso</h2>
-            <div className="flex gap-2">
-              {FILTER_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setFilter(opt.value)}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                    filter === opt.value
-                      ? 'bg-blue-600 border-blue-500 text-white'
-                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+        {uniqueListingIds.length === 0 && !loading ? (
+          <div className={styles.card} style={{ textAlign: 'center', padding: '100px 40px', borderStyle: 'dotted' }}>
+            <FileText size={48} style={{ color: '#1e293b', margin: '0 auto 24px' }} />
+            <p style={{ color: '#64748b', fontSize: '15px' }}>Inicie o processo de auditoria de um ativo para criar um Data Room.</p>
           </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center h-48">
-              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-10 text-center">
-              <Lock className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-              <p className="text-slate-500 text-sm">Nenhuma solicitação {filter !== 'all' ? 'neste filtro' : 'recebida'}.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {filtered.map(req => {
-                const cfg = STATUS_CONFIG[req.status];
-                const StatusIcon = cfg.icon;
-                const isBusy = (id: string) => submitting === req.id + id;
-
-                return (
-                  <div key={req.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex items-start gap-4 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 text-xs font-bold text-white">
-                        {req.investor.fullName.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <span className="text-sm font-semibold text-white">{req.investor.fullName}</span>
-                          <span className="text-xs text-slate-500">{req.investor.email}</span>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1 ${cfg.cls}`}>
-                            <StatusIcon className="w-3 h-3" /> {cfg.label}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500">
-                          <span className="text-slate-600">Deal:</span> {req.listing.title}
-                        </p>
-                        {req.message && (
-                          <p className="text-xs text-slate-400 mt-1 italic">&ldquo;{req.message}&rdquo;</p>
-                        )}
-                        <p className="text-[10px] text-slate-700 mt-1">
-                          {new Date(req.createdAt).toLocaleDateString('pt-BR', {
-                            day: '2-digit', month: 'short', year: 'numeric',
-                          })}
-                        </p>
-                      </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {uniqueListingIds.map(lid => {
+              const req = requests.find(r => r.listing.id === lid)!;
+              const isOpen = expandedListingId === lid;
+              return (
+                <div key={lid} className={styles.card} style={{ padding: 0, overflow: 'hidden', border: isOpen ? '1px solid rgba(0,184,178,0.3)' : '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)', transition: '0.3s' }}>
+                  <button
+                    onClick={() => setExpandedListingId(isOpen ? null : lid)}
+                    style={{ width: '100%', padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isOpen ? 'rgba(0,184,178,0.03)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                       <div style={{ width: '56px', height: '56px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', display: 'grid', placeItems: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <Lock size={20} className={isOpen ? 'text-[#00b8b2]' : 'text-[#475569]'} />
+                       </div>
+                       <div>
+                          <p style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#fff' }}>{req.listing.title}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                             <span style={{ fontSize: '10px', fontWeight: 900, color: '#00b8b2', background: 'rgba(0,184,178,0.1)', padding: '2px 8px', borderRadius: '4px' }}>SECURE ROOM</span>
+                             <span style={{ fontSize: '10px', color: '#475569', fontWeight: 700 }}>REF: {lid.split('-')[0].toUpperCase()}</span>
+                          </div>
+                       </div>
                     </div>
+                    {isOpen ? <ChevronUp size={20} className="text-[#00b8b2]" /> : <ChevronDown size={20} className="text-[#475569]" />}
+                  </button>
+                  {isOpen && (
+                    <PlanGate
+                      minTier="PROFESSIONAL"
+                      variant="blur"
+                      title="Data Room Corporativo"
+                      description="A custódia de documentos confidenciais exige o plano Professional ou Elite."
+                    >
+                      <DocumentsPanel listingId={lid} />
+                    </PlanGate>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
+      {/* Access Requests Section */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+             <div style={{ width: '4px', height: '16px', background: '#fb923c', borderRadius: '4px' }}></div>
+             <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#fff', margin: 0 }}>Protocolos de Acesso</h2>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.02)', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            {FILTER_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setFilter(opt.value)}
+                className={filter === opt.value ? styles.btnBrand : styles.btnGhost}
+                style={{ height: '32px', fontSize: '11px', padding: '0 16px', borderRadius: '8px', border: 'none' }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading ? (
+          <div style={{ display: 'grid', placeItems: 'center', height: '200px' }}>
+            <Loader2 size={32} className="text-[#00b8b2] animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className={styles.card} style={{ textAlign: 'center', padding: '60px 20px', borderStyle: 'dashed' }}>
+            <p style={{ fontSize: '14px', color: '#64748b', fontWeight: 700 }}>Nenhum protocolo encontrado para o critério selecionado.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {filtered.map(req => {
+              const cfg = STATUS_CONFIG[req.status];
+              const StatusIcon = cfg.icon;
+              const isBusy = (id: string) => submitting === req.id + id;
+
+              return (
+                <div key={req.id} className={styles.card} style={{ padding: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '32px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px', minWidth: 0 }}>
+                    <div style={{ width: '56px', height: '56px', background: 'rgba(255,255,255,0.02)', borderRadius: '18px', display: 'grid', placeItems: 'center', fontSize: '20px', fontWeight: 900, color: '#fff', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      {req.investor.fullName.charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
+                        <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#fff' }}>{req.investor.fullName}</h3>
+                        <span className={`${styles.badge} ${cfg.cls}`} style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', padding: '4px 12px' }}>
+                           <StatusIcon size={12} className="mr-2" /> {cfg.label}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#475569', fontWeight: 700 }}>
+                        Alvo: <span style={{ color: '#8fa6c3' }}>{req.listing.title}</span>
+                      </p>
+                      {req.message && (
+                        <div style={{ marginTop: '16px', padding: '12px 18px', background: 'rgba(0,184,178,0.03)', borderRadius: '10px', border: '1px solid rgba(0,184,178,0.1)', maxWidth: '400px' }}>
+                           <p style={{ margin: 0, fontSize: '12px', color: '#8fa6c3', lineHeight: 1.6, fontStyle: 'italic' }}>
+                              &ldquo;{req.message}&rdquo;
+                           </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '16px' }}>
+                    <span style={{ fontSize: '11px', color: '#475569', fontWeight: 800, textTransform: 'uppercase' }}>
+                      Protocolo: {new Date(req.createdAt).toLocaleDateString('pt-BR')}
+                    </span>
                     {req.status === 'PENDING' && (
-                      <div className="flex gap-2 shrink-0">
-                        <button
-                          onClick={() => handleDecision(req.id, 'APPROVED')}
-                          disabled={!!submitting}
-                          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 transition disabled:opacity-50"
-                        >
-                          {isBusy('APPROVED') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                          Aprovar
-                        </button>
+                      <div style={{ display: 'flex', gap: '12px' }}>
                         <button
                           onClick={() => handleDecision(req.id, 'REJECTED')}
                           disabled={!!submitting}
-                          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 transition disabled:opacity-50"
+                          className={styles.btnGhost}
+                          style={{ height: '44px', padding: '0 24px', fontSize: '13px', fontWeight: 800, color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.1)' }}
                         >
-                          {isBusy('REJECTED') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                          {isBusy('REJECTED') ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} className="mr-2" />}
                           Rejeitar
+                        </button>
+                        <button
+                          onClick={() => handleDecision(req.id, 'APPROVED')}
+                          disabled={!!submitting}
+                          className={styles.btnBrand}
+                          style={{ height: '44px', padding: '0 24px', fontSize: '13px', fontWeight: 800 }}
+                        >
+                          {isBusy('APPROVED') ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} className="mr-2" />}
+                          Aprovar Protocolo
                         </button>
                       </div>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-    </AdminLayout>
+    </>
   );
 }

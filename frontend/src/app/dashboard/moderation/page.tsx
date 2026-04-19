@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { api } from '@/services/api.client';
 import {
   ShieldAlert, CheckCircle2, XCircle, Flag, Zap,
-  ChevronDown, ChevronUp, History, Loader2, AlertTriangle,
+  ChevronDown, ChevronUp, History, Loader2, AlertTriangle, X, Shield, History as HistoryIcon,
 } from 'lucide-react';
+import styles from '@/styles/Dashboard.module.css';
 
 interface AiInsight {
   scamProbability: number;
@@ -41,23 +41,16 @@ interface ModerationHistoryEntry {
 const STATUS_FILTER_OPTIONS = [
   { label: 'Pendentes + Flagged', value: 'PENDING_AI_REVIEW,FLAGGED' },
   { label: 'Aguardando IA', value: 'PENDING_AI_REVIEW' },
-  { label: 'Flagged pela IA', value: 'FLAGGED' },
+  { label: 'Flagged IA', value: 'FLAGGED' },
   { label: 'Ativos', value: 'ACTIVE' },
   { label: 'Suspensos', value: 'SUSPENDED' },
 ];
 
-const STATUS_BADGES: Record<string, string> = {
-  PENDING_AI_REVIEW: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  FLAGGED: 'bg-red-500/15 text-red-400 border-red-500/30',
-  ACTIVE: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  SUSPENDED: 'bg-slate-700 text-slate-400 border-slate-600',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING_AI_REVIEW: 'Aguardando IA',
-  FLAGGED: 'Flagged',
-  ACTIVE: 'Ativo',
-  SUSPENDED: 'Suspenso',
+const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
+  PENDING_AI_REVIEW: { label: 'Aguardando IA', cls: styles.bOrange },
+  FLAGGED:           { label: 'Flagged',       cls: styles.bRed },
+  ACTIVE:            { label: 'Ativo',         cls: styles.bGreen },
+  SUSPENDED:         { label: 'Suspenso',      cls: styles.bGhost },
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -143,275 +136,284 @@ export default function ModerationPage() {
   };
 
   const scamColor = (p: number) => {
-    if (p >= 0.7) return 'text-red-400';
-    if (p >= 0.4) return 'text-amber-400';
-    return 'text-emerald-400';
+    if (p >= 0.7) return '#ef4444';
+    if (p >= 0.4) return '#fb923c';
+    return '#10b981';
   };
 
   return (
-    <AdminLayout>
-      <div className="min-h-screen bg-[#020617] text-slate-100 p-6">
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <ShieldAlert className="w-6 h-6 text-amber-500" /> Moderação
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Revise anúncios sinalizados pela IA ou aguardando aprovação manual.
-            </p>
-          </div>
-          <span className="text-xs text-slate-500 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
-            {total} item{total !== 1 ? 's' : ''} na fila
-          </span>
+    <>
+      {/* Header */}
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Shield className="w-6 h-6 text-[#fb923c]" /> Terminal de Moderação
+          </h1>
+          <p>Revise anúncios sinalizados pela IA HAYIA ou aguardando aprovação ética.</p>
         </div>
-
-        {/* Feedback */}
-        {feedback && (
-          <div className={`mb-4 p-3 rounded-xl text-sm border ${
-            feedback.type === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-              : 'bg-red-500/10 border-red-500/20 text-red-400'
-          }`}>
-            {feedback.msg}
-          </div>
-        )}
-
-        {/* Status filter tabs */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {STATUS_FILTER_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => { setStatusFilter(opt.value); setPage(1); }}
-              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                statusFilter === opt.value
-                  ? 'bg-blue-600 border-blue-500 text-white'
-                  : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+           <span style={{ fontSize: '11px', color: '#8fa6c3', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+             {total} Pendentes
+           </span>
         </div>
+      </div>
 
-        {/* Queue */}
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-          </div>
-        ) : items.length === 0 ? (
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-12 text-center">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-            <p className="text-slate-400 font-medium">Fila vazia — nenhum item para revisar.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {items.map(item => {
-              const insight = item.aiInsights?.[0];
-              const isExpanded = expandedId === item.id;
-              const isBusy = submitting?.startsWith(item.id);
+      {feedback && (
+        <div className={styles.card} style={{ 
+          marginBottom: '24px', 
+          padding: '12px 20px', 
+          border: feedback.type === 'success' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+          color: feedback.type === 'success' ? '#10b981' : '#ef4444',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          {feedback.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+          {feedback.msg}
+        </div>
+      )}
 
-              return (
-                <div key={item.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-                  <div className="p-5">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      {/* Listing info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center flex-wrap gap-2 mb-1.5">
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_BADGES[item.status] || 'bg-slate-700 text-slate-400 border-slate-600'}`}>
-                            {STATUS_LABELS[item.status] || item.status}
+      {/* Filters Bar */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }}>
+        {STATUS_FILTER_OPTIONS.map(opt => (
+          <button
+            key={opt.value}
+            onClick={() => { setStatusFilter(opt.value); setPage(1); }}
+            className={statusFilter === opt.value ? styles.btnBrand : styles.btnGhost}
+            style={{ height: '36px', fontSize: '12px', padding: '0 16px' }}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Queue items */}
+      {loading ? (
+        <div style={{ display: 'grid', placeItems: 'center', height: '40vh' }}>
+          <Loader2 className="w-10 h-10 text-[#00b8b2] animate-spin" />
+        </div>
+      ) : items.length === 0 ? (
+        <div className={styles.card} style={{ textAlign: 'center', padding: '80px 20px', borderStyle: 'dashed' }}>
+          <CheckCircle2 className="w-12 h-12 text-[#10b981] mx-auto mb-4 opacity-50" />
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Tudo limpo!</h3>
+          <p style={{ color: '#8fa6c3', fontSize: '14px' }}>Não existem ativos na fila de espera para este filtro.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {items.map(item => {
+            const insight = item.aiInsights?.[0];
+            const isExpanded = expandedId === item.id;
+            const isBusy = submitting?.startsWith(item.id);
+            const cfg = STATUS_CONFIG[item.status] || { label: item.status, cls: '' };
+
+            return (
+              <div key={item.id} className={styles.card} style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ padding: '24px' }}>
+                  <div className="flex items-start justify-between gap-6 flex-wrap md:flex-nowrap">
+                    
+                    {/* Ativo Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                        <span className={`${styles.badge} ${cfg.cls}`} style={{ fontSize: '9px' }}>
+                          {cfg.label}
+                        </span>
+                        {item.category && (
+                          <span style={{ fontSize: '11px', color: '#8fa6c3', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {item.category.name}
                           </span>
-                          {item.category && (
-                            <span className="text-[10px] text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">
-                              {item.category.name}
-                            </span>
-                          )}
-                          <span className="text-[10px] text-slate-600">Seller: {item.tenant.name}</span>
-                          <span className="text-[10px] text-slate-700">
-                            {new Date(item.createdAt).toLocaleDateString('pt-BR')}
-                          </span>
-                        </div>
-                        <h3 className="text-sm font-semibold text-white leading-snug">{item.title}</h3>
-                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{item.description}</p>
-                        {item.price !== null && (
-                          <p className="text-xs font-mono text-slate-400 mt-1">
-                            R$ {Number(item.price).toLocaleString('pt-BR')}
-                          </p>
                         )}
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>#{item.id.slice(0, 8)}</span>
                       </div>
-
-                      {/* AI Insight card */}
-                      {insight && (
-                        <div className="shrink-0 bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 min-w-[148px] space-y-1.5">
-                          <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">AI Insight</p>
-                          <div className="flex items-center gap-1.5">
-                            <AlertTriangle className={`w-3.5 h-3.5 ${scamColor(insight.scamProbability)}`} />
-                            <span className={`text-xs font-mono font-bold ${scamColor(insight.scamProbability)}`}>
-                              {(insight.scamProbability * 100).toFixed(0)}% risco
-                            </span>
-                          </div>
-                          {insight.flags.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {insight.flags.map(f => (
-                                <span key={f} className="text-[9px] bg-red-500/10 text-red-400 border border-red-500/20 rounded px-1.5 py-0.5">
-                                  {f}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          {insight.recommendedTitle && (
-                            <p className="text-[10px] text-slate-400 italic leading-tight">
-                              &ldquo;{insight.recommendedTitle}&rdquo;
-                            </p>
-                          )}
-                        </div>
-                      )}
+                      <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#fff' }}>{item.title}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '8px 0' }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Building className="w-3.5 h-3.5 text-[#8fa6c3]" />
+                            <span style={{ fontSize: '12px', color: '#eef6ff', fontWeight: 600 }}>{item.tenant.name}</span>
+                         </div>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Clock className="w-3.5 h-3.5 text-[#8fa6c3]" />
+                            <span style={{ fontSize: '12px', color: '#8fa6c3' }}>{new Date(item.createdAt).toLocaleDateString()}</span>
+                         </div>
+                         {item.price !== null && (
+                           <span style={{ fontSize: '12px', fontWeight: 800, color: '#00b8b2' }}>
+                              R$ {Number(item.price).toLocaleString('pt-BR')}
+                           </span>
+                         )}
+                      </div>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#8fa6c3', lineHeight: 1.6 }} className="line-clamp-2">
+                        {item.description}
+                      </p>
                     </div>
 
-                    {/* Action buttons */}
-                    {canModerate && (
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() => handleAction(item.id, 'APPROVE')}
-                          disabled={!!isBusy}
-                          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 transition disabled:opacity-50"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Aprovar
-                        </button>
-                        <button
-                          onClick={() => handleAction(item.id, 'OVERRIDE_AI')}
-                          disabled={!!isBusy}
-                          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 hover:bg-blue-600/30 transition disabled:opacity-50"
-                        >
-                          <Zap className="w-3.5 h-3.5" /> Override IA
-                        </button>
-                        <button
-                          onClick={() => handleAction(item.id, 'FLAG')}
-                          disabled={!!isBusy}
-                          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-600/20 border border-amber-500/30 text-amber-400 hover:bg-amber-600/30 transition disabled:opacity-50"
-                        >
-                          <Flag className="w-3.5 h-3.5" /> Flaggar
-                        </button>
-                        <button
-                          onClick={() => handleAction(item.id, 'REJECT')}
-                          disabled={!!isBusy}
-                          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 transition disabled:opacity-50"
-                        >
-                          <XCircle className="w-3.5 h-3.5" /> Rejeitar
-                        </button>
-
-                        <div className="flex-1" />
-
-                        <button
-                          onClick={() => openHistory(item.id)}
-                          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition"
-                        >
-                          <History className="w-3.5 h-3.5" /> Histórico
-                        </button>
-                        <button
-                          onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                          className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition"
-                        >
-                          Motivo {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                        </button>
+                    {/* AI Radar */}
+                    {insight && (
+                      <div className={styles.card} style={{ width: '180px', padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                         <p style={{ margin: '0 0 12px', fontSize: '10px', fontWeight: 800, color: '#8fa6c3', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <Zap className="w-3 h-3 text-[#fb923c]" /> HAYIA Intelligence
+                         </p>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                             <AlertTriangle className="w-5 h-5" style={{ color: scamColor(insight.scamProbability) }} />
+                             <span style={{ fontSize: '18px', fontWeight: 900, color: scamColor(insight.scamProbability) }}>
+                               {(insight.scamProbability * 100).toFixed(0)}%
+                             </span>
+                             <span style={{ fontSize: '10px', color: '#8fa6c3' }}>SCORE<br/>RISCO</span>
+                         </div>
+                         {insight.flags.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                               {insight.flags.map(f => (
+                                 <span key={f} style={{ fontSize: '9px', fontWeight: 800, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 6px', borderRadius: '4px' }}>
+                                   {f}
+                                 </span>
+                               ))}
+                            </div>
+                         )}
                       </div>
                     )}
                   </div>
 
-                  {/* Expandable reason input */}
-                  {isExpanded && (
-                    <div className="border-t border-slate-800 px-5 py-4 bg-slate-950/40">
-                      <label className="block text-xs text-slate-400 mb-2">
-                        Motivo da ação (incluído no histórico e notificação ao seller)
-                      </label>
-                      <input
-                        type="text"
-                        value={reasons[item.id] || ''}
-                        onChange={e => setReasons(r => ({ ...r, [item.id]: e.target.value }))}
-                        placeholder="Ex: Preço irrealista para o segmento..."
-                        className="input-premium w-full text-sm"
-                      />
+                  {/* Controls */}
+                  {canModerate && (
+                    <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                       <button
+                          onClick={() => handleAction(item.id, 'APPROVE')}
+                          disabled={!!isBusy}
+                          className={styles.btnBrand}
+                          style={{ height: '36px', fontSize: '12px', padding: '0 16px' }}
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" /> Aprovar
+                        </button>
+                        <button
+                          onClick={() => handleAction(item.id, 'OVERRIDE_AI')}
+                          disabled={!!isBusy}
+                          className={styles.btnGhost}
+                          style={{ height: '36px', fontSize: '12px', padding: '0 16px', color: '#00b8b2' }}
+                        >
+                          <Zap className="w-4 h-4 mr-2" /> Override IA
+                        </button>
+                        <button
+                          onClick={() => handleAction(item.id, 'FLAG')}
+                          disabled={!!isBusy}
+                          className={styles.btnGhost}
+                          style={{ height: '36px', fontSize: '12px', padding: '0 16px', color: '#fb923c' }}
+                        >
+                          <Flag className="w-4 h-4 mr-2" /> Flaggar
+                        </button>
+                        <button
+                          onClick={() => handleAction(item.id, 'REJECT')}
+                          disabled={!!isBusy}
+                          className={styles.btnGhost}
+                          style={{ height: '36px', fontSize: '12px', padding: '0 16px', color: '#ef4444' }}
+                        >
+                          <XCircle className="w-4 h-4 mr-2" /> Rejeitar
+                        </button>
+
+                        <div style={{ flex: 1 }} />
+
+                        <button
+                          onClick={() => openHistory(item.id)}
+                          className={styles.btnGhost}
+                          style={{ height: '32px', padding: '0 12px', fontSize: '11px', border: 'none' }}
+                        >
+                          <HistoryIcon className="w-3.5 h-3.5 mr-1" /> Histórico
+                        </button>
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                          className={styles.btnGhost}
+                          style={{ height: '32px', padding: '0 12px', fontSize: '11px', border: 'none' }}
+                        >
+                          {isExpanded ? 'Ocultar Motivo' : 'Adicionar Motivo'}
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
+                        </button>
                     </div>
                   )}
                 </div>
-              );
-            })}
-          </div>
-        )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 mt-6">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="text-xs text-slate-400 hover:text-slate-200 disabled:opacity-40 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 transition"
-            >
-              Anterior
-            </button>
-            <span className="text-xs text-slate-500">{page} / {totalPages}</span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="text-xs text-slate-400 hover:text-slate-200 disabled:opacity-40 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 transition"
-            >
-              Próxima
-            </button>
-          </div>
-        )}
-
-        {/* History modal */}
-        {historyListingId && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-lg max-h-[80vh] flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <History className="w-4 h-4 text-slate-400" /> Histórico de Moderação
-                </h3>
-                <button
-                  onClick={() => setHistoryListingId(null)}
-                  className="text-slate-500 hover:text-slate-200 transition text-sm"
-                >
-                  Fechar
-                </button>
+                {isExpanded && (
+                  <div style={{ padding: '0 24px 24px' }}>
+                     <input
+                        type="text"
+                        value={reasons[item.id] || ''}
+                        onChange={e => setReasons(r => ({ ...r, [item.id]: e.target.value }))}
+                        placeholder="Justificativa ética para auditoria..."
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '13px' }}
+                      />
+                  </div>
+                )}
               </div>
+            );
+          })}
+        </div>
+      )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', items: 'center', justifyContent: 'center', gap: '8px', marginTop: '32px' }}>
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className={styles.btnGhost}
+            style={{ height: '36px', padding: '0 16px' }}
+          >
+            Anterior
+          </button>
+          <span style={{ fontSize: '14px', fontWeight: 800, color: '#00b8b2', padding: '0 12px' }}>{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className={styles.btnGhost}
+            style={{ height: '36px', padding: '0 16px' }}
+          >
+            Próxima
+          </button>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {historyListingId && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'grid', placeItems: 'center', zIndex: 1000, padding: '20px' }}>
+          <div className={styles.card} style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', maxHeight: '80vh', padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                 <HistoryIcon className="w-5 h-5 text-[#00b8b2]" /> Auditoria de Moderação
+               </h3>
+               <button onClick={() => setHistoryListingId(null)} className={styles.btnGhost} style={{ width: '32px', height: '32px', padding: 0 }}>
+                  <X className="w-4 h-4" />
+               </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
               {loadingHistory ? (
-                <div className="flex items-center justify-center h-32">
-                  <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                <div style={{ display: 'grid', placeItems: 'center', padding: '40px' }}>
+                   <Loader2 className="w-8 h-8 text-[#00b8b2] animate-spin" />
                 </div>
               ) : history.length === 0 ? (
-                <p className="text-slate-500 text-sm text-center py-8">Nenhuma ação registrada.</p>
+                <p style={{ textAlign: 'center', color: '#8fa6c3', fontSize: '14px' }}>Nenhum registro encontrado para este ativo.</p>
               ) : (
-                <div className="overflow-y-auto space-y-3 pr-1">
-                  {history.map(h => (
-                    <div key={h.id} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold text-slate-300">
-                          {ACTION_LABELS[h.action] || h.action}
-                        </span>
-                        <span className="text-[10px] text-slate-600">
-                          {new Date(h.createdAt).toLocaleDateString('pt-BR', {
-                            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-500">
-                        {h.previousStatus} → {h.newStatus} · por {h.moderator.fullName}
-                      </p>
-                      {h.reason && (
-                        <p className="text-xs text-slate-400 mt-1 italic">&ldquo;{h.reason}&rdquo;</p>
-                      )}
-                    </div>
-                  ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                   {history.map(h => (
+                     <div key={h.id} style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                           <span style={{ fontSize: '13px', fontWeight: 800, color: '#eef6ff' }}>{ACTION_LABELS[h.action] || h.action}</span>
+                           <span style={{ fontSize: '11px', color: '#64748b' }}>{new Date(h.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '11px', color: '#8fa6c3' }}>
+                           Status: <span style={{ color: '#fff' }}>{h.previousStatus}</span> → <span style={{ color: '#00b8b2' }}>{h.newStatus}</span>
+                        </p>
+                        <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>Auditor: {h.moderator.fullName}</p>
+                        {h.reason && (
+                          <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', borderLeft: '3px solid #00b8b2', fontSize: '12px', color: '#8fa6c3', fontStyle: 'italic' }}>
+                            &ldquo;{h.reason}&rdquo;
+                          </div>
+                        )}
+                     </div>
+                   ))}
                 </div>
               )}
             </div>
           </div>
-        )}
-
-      </div>
-    </AdminLayout>
+        </div>
+      )}
+    </>
   );
 }

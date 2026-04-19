@@ -1,7 +1,9 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { ListingImage } from '../common/ListingImage';
+import { FavoriteButton } from '../common/FavoriteButton';
 
 export interface Opportunity {
   id: string;
@@ -25,16 +27,20 @@ interface OpportunityCardProps {
 
 export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity }) => {
   return (
-    <Link href={`/oportunidades/${opportunity.id}`} className="card">
+    <Link href={`/oportunidades/${opportunity.id}`} className="card relative group">
       {/* 1. Imagem com triple fallback */}
       <div className="image-container">
         <ListingImage 
           src={opportunity.image} 
           category={opportunity.categorySlug} 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
         <div className="image-overlay" />
 
+        {/* Botão de Favorito - Posição Premium */}
+        <div className="absolute top-4 right-4 z-20">
+          <FavoriteButton listingId={opportunity.id} />
+        </div>
         
         {/* Badges do Topo */}
         <div className="badges-container">

@@ -31,4 +31,8 @@ export class CreateDataRoomDocumentDto {
   @IsString()
   @MaxLength(64)
   mediaType?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
 }
